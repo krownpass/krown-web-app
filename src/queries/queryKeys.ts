@@ -1,0 +1,47 @@
+import type { CafeFilters } from "@/types/cafe";
+import type { EventFilters } from "@/types/event";
+
+export const queryKeys = {
+  cafes: {
+    all: ["cafes"] as const,
+    lists: () => [...queryKeys.cafes.all, "list"] as const,
+    list: (filters?: CafeFilters) => [...queryKeys.cafes.lists(), filters ?? {}] as const,
+    details: () => [...queryKeys.cafes.all, "detail"] as const,
+    detail: (slug: string) => [...queryKeys.cafes.details(), slug] as const,
+    menu: (cafeId: string) => [...queryKeys.cafes.all, "menu", cafeId] as const,
+    reviews: (cafeId: string) => [...queryKeys.cafes.all, "reviews", cafeId] as const,
+    themes: () => [...queryKeys.cafes.all, "themes"] as const,
+    theme: (slug: string) => [...queryKeys.cafes.all, "theme", slug] as const,
+    featured: () => [...queryKeys.cafes.all, "featured"] as const,
+    nearby: (lat: number, lng: number) => [...queryKeys.cafes.all, "nearby", lat, lng] as const,
+  },
+  events: {
+    all: ["events"] as const,
+    lists: () => [...queryKeys.events.all, "list"] as const,
+    list: (filters?: EventFilters) => [...queryKeys.events.lists(), filters ?? {}] as const,
+    details: () => [...queryKeys.events.all, "detail"] as const,
+    detail: (slug: string) => [...queryKeys.events.details(), slug] as const,
+    tickets: () => [...queryKeys.events.all, "tickets"] as const,
+    ticket: (id: string) => [...queryKeys.events.tickets(), id] as const,
+    upcoming: () => [...queryKeys.events.all, "upcoming"] as const,
+    featured: () => [...queryKeys.events.all, "featured"] as const,
+  },
+  bookings: {
+    all: ["bookings"] as const,
+    list: (type?: "cafe" | "event") => [...queryKeys.bookings.all, type ?? "all"] as const,
+    detail: (id: string) => [...queryKeys.bookings.all, id] as const,
+    slots: (cafeId: string, date: string) => [...queryKeys.bookings.all, "slots", cafeId, date] as const,
+  },
+  user: {
+    profile: ["user", "profile"] as const,
+    devices: ["user", "devices"] as const,
+    transactions: ["user", "transactions"] as const,
+    notifications: ["user", "notifications"] as const,
+    unreadCount: ["user", "notifications", "unread"] as const,
+    rewards: ["user", "rewards"] as const,
+    redemptionOptions: ["user", "rewards", "options"] as const,
+    redemptionHistory: ["user", "rewards", "history"] as const,
+    bookmarks: ["user", "bookmarks"] as const,
+    referral: ["user", "referral"] as const,
+  },
+} as const;

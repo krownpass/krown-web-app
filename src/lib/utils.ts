@@ -1,0 +1,107 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function formatCurrency(amount: number, currency = "INR"): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function formatDate(date: string | Date, formatStr = "MMM d, yyyy"): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function formatTime(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+export function formatRelativeTime(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDate(d);
+}
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9 -]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+export function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + "...";
+}
+
+export function getPriceRange(range?: number): string {
+  if (!range) return "";
+  return "₹".repeat(range);
+}
+
+export function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+}
+
+export function getDistance(km?: number): string {
+  if (!km) return "";
+  if (km < 1) return `${Math.round(km * 1000)}m`;
+  return `${km.toFixed(1)}km`;
+}
+
+export function getCapacityPercent(current?: number, max?: number): number {
+  if (!current || !max) return 0;
+  return Math.min(Math.round((current / max) * 100), 100);
+}
+
+export function isEventUpcoming(startTime: string): boolean {
+  return new Date(startTime) > new Date();
+}
+
+export function getStatusColor(status: string): string {
+  const map: Record<string, string> = {
+    confirmed: "text-green-400 bg-green-400/10",
+    pending: "text-yellow-400 bg-yellow-400/10",
+    completed: "text-blue-400 bg-blue-400/10",
+    cancelled: "text-red-400 bg-red-400/10",
+    no_show: "text-gray-400 bg-gray-400/10",
+    active: "text-green-400 bg-green-400/10",
+    used: "text-gray-400 bg-gray-400/10",
+    waitlisted: "text-orange-400 bg-orange-400/10",
+    refunded: "text-purple-400 bg-purple-400/10",
+  };
+  return map[status] ?? "text-gray-400 bg-gray-400/10";
+}
