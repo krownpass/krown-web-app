@@ -20,10 +20,13 @@ import { paymentService } from '@/services/payment.service';
 import { eventService } from '@/services/event.service';
 import { RAZORPAY_KEY_ID } from '@/lib/constants';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/queries/queryKeys';
 
 export default function EventDetailPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuthStore();
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -71,57 +74,81 @@ export default function EventDetailPage() {
 
     if (event.is_paid && event.base_price) {
       setPaymentLoading(true);
+      let isRegistrationCreated = false;
+
       try {
         const loaded = await paymentService.loadRazorpayScript();
         if (!loaded) { toast.error('Payment service unavailable'); return; }
 
         // Register first (creates PENDING registration), then initiate payment
         await eventService.registerForEvent(event.event_id);
+        isRegistrationCreated = true;
+
         const order = await paymentService.initiateEventPayment(event.event_id, Number(event.base_price));
+        
         const rzp = new window.Razorpay({
-          key: RAZORPAY_KEY_ID,
-          amount: order.amount,
-          currency: order.currency,
+          // Use dynamic Key from backend, exactly like mobile app
+          key: order.key || '', 
+          amount: Number(order.amount),
+          currency: order.currency || 'INR',
           name: 'Krown',
           description: event.title,
-          order_id: order.order_id,
+          order_id: order.razorpay_order_id || order.order_id || '',
           prefill: { name: user?.name, contact: user?.phone, email: user?.email },
           theme: { color: '#800020' },
           handler: async (response) => {
             try {
               await paymentService.verifyEventPayment(event.event_id, response);
-              toast.success('Registration successful!');
-              router.push('/events/my-tickets');
-            } catch {
-              toast.error('Payment verification failed.');
-            }
-          },
-          modal: { ondismiss: () => setPaymentLoading(false) },
-        });
-        rzp.open();
-      } catch (err: any) {
-        const msg = err?.response?.data?.message ?? 'Failed to initiate payment.';
-        toast.error(msg);
-      } finally {
-        setPaymentLoading(false);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+                await queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets() });
+                toast.success('Registration successful!');
+                router.push('/events/my-tickets');
+              } catch {
+                toast.error('Payment verification failed.');
+                await eventService.cancelRegistration(event.event_id).catch(() => {});
+              }
+            },
+            modal: { 
+              ondismiss: async () => {
+                setPaymentLoading(false);
+                toast.error('Payment cancelled');
+                await eventService.cancelRegistration(event.event_id).catch(() => {});
+              } 
+            },
+          });
+          rzp.open();
+        } catch (err: any) {
+          if (isRegistrationCreated) {
+            await eventService.cancelRegistration(event.event_id).catch(() => {});
+          }
+          const msg = err?.response?.data?.message ?? 'Failed to initiate payment.';
+          toast.error(msg);
+        } finally {
+          // Only stop loading if an error occurred before opening Razorpay
+          // Razorpay modal manages its own loading state via ondismiss/handler
+          if (!isRegistrationCreated) {
+              setPaymentLoading(false);
+          }
+        }
+      } else {
+        try {
+          await eventService.registerForEvent(event.event_id);
+          await queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets() });
+          toast.success('You\'re registered!');
+          router.push('/events/my-tickets');
+        } catch (err: any) {
+          const msg = err?.response?.data?.message ?? 'Registration failed. Please try again.';
+          toast.error(msg);
+        }
       }
-    } else {
-      try {
-        await eventService.registerForEvent(event.event_id);
-        toast.success('You\'re registered!');
-        router.push('/events/my-tickets');
-      } catch (err: any) {
-        const msg = err?.response?.data?.message ?? 'Registration failed. Please try again.';
-        toast.error(msg);
-      }
-    }
-  };
+    };
 
-  const handleWaitlist = async () => {
-    if (!isAuthenticated) { router.push('/login'); return; }
-    if (!event) return;
-    try {
-      const res = await waitlistMutation.mutateAsync(event.event_id);
+    const handleWaitlist = async () => {
+      if (!isAuthenticated) { router.push('/login'); return; }
+      if (!event) return;
+      try {
+        const res = await waitlistMutation.mutateAsync(event.event_id);
       toast.success(`Added to waitlist. Position: #${res.position}`);
     } catch {
       toast.error('Failed to join waitlist.');

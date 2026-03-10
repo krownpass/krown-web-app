@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   User, Edit2, Bookmark, BookOpen, Receipt, Smartphone, Users, Crown,
-  LogOut, ChevronRight, AlertTriangle, Star,
+  LogOut, ChevronRight, AlertTriangle, Star, Ticket,
 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { Avatar } from '@/components/ui/Avatar';
@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 
 const menuItems = [
+  { href: '/events/my-tickets', icon: Ticket, label: 'My Tickets' },
   { href: '/profile/bookmarks', icon: Bookmark, label: 'Saved Cafés' },
   { href: '/bookings', icon: BookOpen, label: 'Booking History' },
   { href: '/profile/transactions', icon: Receipt, label: 'Transaction History' },

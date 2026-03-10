@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { TicketCard } from '@/components/event/TicketCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -15,7 +16,8 @@ export default function MyTicketsPage() {
   const now = new Date();
   const filtered = tickets.filter((t) => {
     if (filter === 'all') return true;
-    const eventDate = t.event?.start_time ? new Date(t.event.start_time) : null;
+    const event = t.event || (t as any);
+    const eventDate = event?.start_time ? new Date(event.start_time) : null;
     if (filter === 'upcoming') return eventDate ? eventDate > now : true;
     if (filter === 'past') return eventDate ? eventDate <= now : false;
     return true;
@@ -50,8 +52,10 @@ export default function MyTicketsPage() {
         ) : (
           <div className="space-y-4">
             {filtered.map((ticket, i) => (
-              <motion.div key={ticket.ticket_id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-                <TicketCard ticket={ticket} />
+              <motion.div key={(ticket as any).registration_id || ticket.ticket_id || i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
+                <Link href={`/events/my-tickets/${ticket.event_id}`}>
+                  <TicketCard ticket={ticket} className="hover:border-[#800020] transition-colors cursor-pointer" />
+                </Link>
               </motion.div>
             ))}
           </div>

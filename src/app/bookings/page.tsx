@@ -14,14 +14,14 @@ const STATUS_FILTERS = ['All', 'Pending', 'Accepted', 'Cancelled', 'Rejected'] a
 type StatusFilter = typeof STATUS_FILTERS[number];
 
 const TABS = [
-  { label: 'Café Tables', value: 'cafe' },
-  { label: 'Events', value: 'event' },
+  { label: 'Café Tables', value: 'tables' },
+  { label: 'Experiences', value: 'experiences' },
 ];
 
 export default function BookingsPage() {
-  const [tabType, setTabType] = useState<'cafe' | 'event'>('cafe');
+  const [tabType, setTabType] = useState<'tables' | 'experiences'>('tables');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
-  const { data: bookings = [], isLoading } = useMyBookings(tabType);
+  const { data: bookings = [], isLoading } = useMyBookings();
   const cancelBooking = useCancelBooking();
 
   const handleCancel = async (id: string) => {
@@ -46,25 +46,35 @@ export default function BookingsPage() {
           <p className="text-white/40 text-sm">Manage your reservations</p>
         </motion.div>
 
-        <Tabs tabs={TABS} activeTab={tabType} onChange={(v) => setTabType(v as 'cafe' | 'event')} className="mb-4" />
+        <Tabs tabs={TABS} activeTab={tabType} onChange={(v) => setTabType(v as 'tables' | 'experiences')} className="mb-4" />
 
         {/* Status filters */}
-        <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-1">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setStatusFilter(f)}
-              className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border capitalize transition-all ${statusFilter === f ? 'bg-[#800020] border-[#800020] text-white' : 'border-[#2A2A2A] text-white/50'}`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        {tabType === 'tables' && (
+          <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-1">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border capitalize transition-all ${statusFilter === f ? 'bg-[#800020] border-[#800020] text-white' : 'border-[#2A2A2A] text-white/50'}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
           </div>
+        ) : tabType === 'experiences' ? (
+          <EmptyState
+            icon="CalendarX"
+            title="No experiences yet"
+            subtitle="Explore our experiences and book a spot"
+            actionLabel="Explore Experiences"
+            onAction={() => window.location.href = '/events'}
+          />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="CalendarX"

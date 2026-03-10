@@ -1,5 +1,7 @@
 export interface RazorpayOrder {
-  order_id: string;
+  order_id?: string;
+  razorpay_order_id?: string;
+  key?: string;
   amount: number;
   currency: string;
   receipt?: string;

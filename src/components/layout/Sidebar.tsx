@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, House, Compass, Calendar, BookOpen, User, Crown, Star, Settings } from 'lucide-react';
+import { X, House, Compass, Calendar, BookOpen, User, Crown, Star, Settings, Ticket } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { icon: House, label: 'Home', href: '/' },
   { icon: Compass, label: 'Explore Cafés', href: '/cafes' },
   { icon: Calendar, label: 'Events', href: '/events' },
+  { icon: Ticket, label: 'My Tickets', href: '/events/my-tickets' },
   { icon: BookOpen, label: 'My Bookings', href: '/bookings' },
   { icon: User, label: 'Profile', href: '/profile' },
   { icon: Crown, label: 'Krown Pass', href: '/krown-pass' },

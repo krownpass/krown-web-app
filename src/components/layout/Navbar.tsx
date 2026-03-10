@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUnreadCount } from '@/queries/useNotifications';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
+import { Ticket } from 'lucide-react';
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -123,6 +124,7 @@ export function Navbar() {
                     </div>
                     {[
                       { icon: <User size={14} />, label: 'My Profile', href: '/profile' },
+                      { icon: <Ticket size={14} />, label: 'My Tickets', href: '/events/my-tickets' },
                       { icon: <Bookmark size={14} />, label: 'Bookmarks', href: '/profile/bookmarks' },
                       { icon: <BookOpen size={14} />, label: 'Bookings', href: '/bookings' },
                     ].map((item) => (

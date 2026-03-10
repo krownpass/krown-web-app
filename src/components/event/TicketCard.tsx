@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Calendar, MapPin } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTime } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
@@ -12,15 +13,22 @@ interface TicketCardProps {
   className?: string;
 }
 
-const statusVariantMap: Record<Ticket['status'], 'success' | 'default' | 'error'> = {
+const statusVariantMap: Record<string, 'success' | 'default' | 'error'> = {
   active: 'success',
+  confirmed: 'success',
+  CONFIRMED: 'success',
   used: 'default',
+  CHECKED_IN: 'default',
   cancelled: 'error',
+  CANCELLED: 'error',
   refunded: 'default',
+  PENDING: 'default'
 };
 
 export function TicketCard({ ticket, showQR = false, className }: TicketCardProps) {
-  const event = ticket.event;
+  // Gracefully handle if ticket acts as registration object
+  const event = ticket.event || (ticket as any);
+  const statusStr = ticket.status ? String(ticket.status).toLowerCase() : 'unknown';
 
   return (
     <div
@@ -41,8 +49,8 @@ export function TicketCard({ ticket, showQR = false, className }: TicketCardProp
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1E1E1E] via-black/40 to-transparent" />
           <div className="absolute bottom-3 left-4">
-            <Badge variant={statusVariantMap[ticket.status]}>
-              {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+            <Badge variant={statusVariantMap[ticket.status] || 'default'}>
+              {statusStr.charAt(0).toUpperCase() + statusStr.slice(1)}
             </Badge>
           </div>
         </div>
@@ -74,7 +82,17 @@ export function TicketCard({ ticket, showQR = false, className }: TicketCardProp
           <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#111]" />
           <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#111]" />
         </div>
-
+          {/* QR Code Section */}
+          {showQR && ticket.qr_code && (
+            <div className="flex flex-col items-center justify-center my-6">
+              <div className="p-3 bg-white rounded-xl">
+                <QRCodeSVG value={ticket.qr_code} size={150} level="H" />
+              </div>
+              <p className="text-xs text-white/50 mt-3 text-center">
+                Show this QR code at the entrance
+              </p>
+            </div>
+          )}
         {/* Ticket number */}
         <div className="flex items-center justify-between">
           <div>
@@ -88,8 +106,8 @@ export function TicketCard({ ticket, showQR = false, className }: TicketCardProp
             </div>
           )}
           {!event?.cover_image && (
-            <Badge variant={statusVariantMap[ticket.status]}>
-              {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+            <Badge variant={statusVariantMap[ticket.status] || 'default'}>
+              {statusStr.charAt(0).toUpperCase() + statusStr.slice(1)}
             </Badge>
           )}
         </div>
