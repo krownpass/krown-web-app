@@ -42,6 +42,7 @@ export const queryKeys = {
     redemptionOptions: ["user", "rewards", "options"] as const,
     redemptionHistory: ["user", "rewards", "history"] as const,
     bookmarks: ["user", "bookmarks"] as const,
+    eventBookmarks: ["user", "eventBookmarks"] as const,
     referral: ["user", "referral"] as const,
   },
 } as const;

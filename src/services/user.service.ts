@@ -2,6 +2,7 @@ import api from "./api";
 import type { User, UserDevice, Transaction, UpdateProfileData } from "@/types/user";
 import type { Cafe } from "@/types/cafe";
 import { mapUser } from "./auth.service";
+import { mapCafe } from "./cafe.service";
 
 export const userService = {
   // GET /api/users/me  or  GET /api/users
@@ -20,7 +21,8 @@ export const userService = {
   async getFavourites(): Promise<Cafe[]> {
     const res = await api.get("/users/favourites");
     const data = res.data.data ?? res.data;
-    return Array.isArray(data) ? data : data.cafes ?? [];
+    const rawArray = Array.isArray(data) ? data : data.cafes ?? [];
+    return rawArray.map(mapCafe);
   },
 
   // POST /api/users/favourites  body: { cafeId }
@@ -31,6 +33,23 @@ export const userService = {
   // DELETE /api/users/favourites  body: { cafeId }
   async removeFavourite(cafeId: string): Promise<void> {
     await api.delete("/users/favourites", { data: { cafeId } });
+  },
+
+  // GET /api/events/favourites
+  async getEventFavourites(): Promise<any[]> {
+    const res = await api.get("/events/favourites");
+    const data = res.data.data ?? res.data;
+    return Array.isArray(data) ? data : data.events ?? [];
+  },
+
+  // POST /api/events/favourites  body: { event_id }
+  async addEventFavourite(eventId: string): Promise<void> {
+    await api.post("/events/favourites", { event_id: eventId });
+  },
+
+  // DELETE /api/events/favourites  body: { event_id }
+  async removeEventFavourite(eventId: string): Promise<void> {
+    await api.delete("/events/favourites", { data: { event_id: eventId } });
   },
 
   // GET /api/auth/devices

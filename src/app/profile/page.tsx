@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 const menuItems = [
   { href: '/events/my-tickets', icon: Ticket, label: 'My Tickets' },
-  { href: '/profile/bookmarks', icon: Bookmark, label: 'Saved Cafés' },
+  { href: '/profile/bookmarks', icon: Bookmark, label: 'Favorites' },
   { href: '/bookings', icon: BookOpen, label: 'Booking History' },
   { href: '/profile/transactions', icon: Receipt, label: 'Transaction History' },
   { href: '/profile/devices', icon: Smartphone, label: 'Active Sessions' },

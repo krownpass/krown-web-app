@@ -56,7 +56,24 @@ export const eventService = {
   async getMyTickets(): Promise<Ticket[]> {
     const res = await api.get("/events/my-registrations");
     const data = res.data.data ?? res.data;
-    return Array.isArray(data) ? data : data.events ?? data.registrations ?? [];
+    const rawEvents = Array.isArray(data) ? data : data.events ?? data.registrations ?? [];
+    
+    return rawEvents.map((r: any) => ({
+      ticket_id: r.registration_id,
+      event_id: r.event_id,
+      user_id: "",
+      ticket_number: r.registration_id?.slice(0, 8).toUpperCase() || "",
+      qr_code: "",
+      status: r.status === "CONFIRMED" ? "active" : r.status === "PENDING" ? "active" : "cancelled",
+      registered_at: r.start_time || "",
+      event: {
+        event_id: r.event_id,
+        title: r.title,
+        cover_image: r.cover_image,
+        start_time: r.start_time,
+        venue_name: r.venue_name || r.location,
+      } as any
+    }));
   },
 
   // GET /api/events/:eventId/registration

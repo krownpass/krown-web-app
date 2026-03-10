@@ -42,7 +42,12 @@ function mapBooking(raw: any): Booking {
     payment_status: raw.payment_status,
     created_at: raw.created_at ?? "",
     updated_at: raw.updated_at ?? "",
-    cafe: raw.cafe,
+    cafe: raw.cafe || (raw.cafe_name ? {
+      cafe_id: raw.cafe_id,
+      name: raw.cafe_name,
+      address: raw.cafe_location,
+      cover_image: raw.cover_img
+    } : undefined),
     event: raw.event,
   };
 }

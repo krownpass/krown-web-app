@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  ArrowLeft, Heart, Share2, MapPin, Calendar, Clock,
+import { ArrowLeft, Heart, Share2, MapPin, Calendar, Clock,
   Users, ChevronDown, ChevronUp, Loader2, Crown, ExternalLink, CheckCircle, Ticket, Minus, Plus
 } from 'lucide-react';
 import { useEventDetail, useRegisterForEvent, useJoinWaitlist, useUserRegistration } from '@/queries/useEventDetail';
+import { useEventBookmarks, useAddEventBookmark, useRemoveEventBookmark } from '@/queries/useUser';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -29,7 +29,6 @@ export default function EventDetailPage() {
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuthStore();
   const [showFullDesc, setShowFullDesc] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [ticketCount, setTicketCount] = useState(1);
 
@@ -37,6 +36,27 @@ export default function EventDetailPage() {
   const { data: userRegistration } = useUserRegistration(event?.event_id);
   const registerMutation = useRegisterForEvent();
   const waitlistMutation = useJoinWaitlist();
+
+  const { data: eventBookmarks = [] } = useEventBookmarks();
+  const addBookmark = useAddEventBookmark();
+  const removeBookmark = useRemoveEventBookmark();
+
+  const isBookmarked = eventBookmarks?.some((b) => b.event_id === event?.event_id) ?? false;
+  const isTogglingBookmark = addBookmark.isPending || removeBookmark.isPending;
+
+  const toggleBookmark = () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to save events');
+      return;
+    }
+    if (!event?.event_id || isTogglingBookmark) return;
+
+    if (isBookmarked) {
+      removeBookmark.mutate(event.event_id);
+    } else {
+      addBookmark.mutate(event.event_id);
+    }
+  };
 
   const handleShare = async () => {
     const path = event?.slug ?? event?.event_id ?? params.slug;
@@ -213,10 +233,16 @@ export default function EventDetailPage() {
             <ArrowLeft size={18} />
           </button>
           <div className="flex gap-2">
-            <button onClick={() => setIsBookmarked(!isBookmarked)} className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white">
+            <button
+              onClick={toggleBookmark}
+              disabled={isTogglingBookmark}
+              className={`p-2 rounded-full bg-black/40 backdrop-blur-sm text-white transition-all ${
+                isTogglingBookmark ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/60'
+              }`}
+            >
               <Heart size={18} fill={isBookmarked ? '#800020' : 'none'} className={isBookmarked ? 'text-[#800020]' : ''} />
             </button>
-            <button onClick={handleShare} className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white">
+            <button onClick={handleShare} className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-all">
               <Share2 size={18} />
             </button>
           </div>

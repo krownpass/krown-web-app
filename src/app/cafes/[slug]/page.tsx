@@ -10,6 +10,7 @@ import {
   ChevronRight, Clock, Crown, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
 import { useCafeDetail, useCafeMenu, useCafeReviews } from '@/queries/useCafeDetail';
+import { useBookmarks, useAddBookmark, useRemoveBookmark } from '@/queries/useUser';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
 import { Badge } from '@/components/ui/Badge';
@@ -33,11 +34,31 @@ export default function CafeDetailPage() {
   const { isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState('about');
   const [imgIndex, setImgIndex] = useState(0);
-  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const { data: cafe, isLoading } = useCafeDetail(params.slug);
   const { data: menu = [] } = useCafeMenu(cafe?.cafe_id ?? '');
   const { data: reviews = [] } = useCafeReviews(cafe?.cafe_id ?? '');
+
+  const { data: bookmarks = [] } = useBookmarks();
+  const addBookmark = useAddBookmark();
+  const removeBookmark = useRemoveBookmark();
+
+  const isBookmarked = bookmarks?.some((b) => b.cafe_id === cafe?.cafe_id) ?? false;
+  const isTogglingBookmark = addBookmark.isPending || removeBookmark.isPending;
+
+  const toggleBookmark = () => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to save cafes');
+      return;
+    }
+    if (!cafe?.cafe_id || isTogglingBookmark) return;
+
+    if (isBookmarked) {
+      removeBookmark.mutate(cafe.cafe_id);
+    } else {
+      addBookmark.mutate(cafe.cafe_id);
+    }
+  };
 
   const images = [cafe?.cover_image, ...(cafe?.images ?? [])].filter(Boolean) as string[];
 
@@ -105,8 +126,11 @@ export default function CafeDetailPage() {
           </button>
           <div className="flex gap-2">
             <button
-              onClick={() => setIsBookmarked(!isBookmarked)}
-              className="p-2 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-all"
+              onClick={toggleBookmark}
+              disabled={isTogglingBookmark}
+              className={`p-2 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-all ${
+                isTogglingBookmark ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <Heart size={18} fill={isBookmarked ? '#800020' : 'none'} className={isBookmarked ? 'text-[#800020]' : ''} />
             </button>

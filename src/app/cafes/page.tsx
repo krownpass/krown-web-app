@@ -7,12 +7,16 @@ import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useCafes } from '@/queries/useCafes';
+import { useAddBookmark, useRemoveBookmark, useBookmarks } from '@/queries/useUser';
+import { useAuthStore } from '@/stores/authStore';
 import { useDebounce } from '@/hooks/useDebounce';
+import { toast } from 'sonner';
 import type { CafeFilters } from '@/types/cafe';
 
 const vibeFilters = ['Fun & Wild', 'Cozy & Comfy', 'Date Night', 'Work & Study', 'Brunch Gang'];
 
 export default function CafesPage() {
+  const { isAuthenticated } = useAuthStore();
   const [search, setSearch] = useState('');
   const [selectedVibe, setSelectedVibe] = useState('');
   const [openNow, setOpenNow] = useState(false);
@@ -28,7 +32,23 @@ export default function CafesPage() {
   };
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useCafes(filters);
+  const { data: userBookmarks = [] } = useBookmarks();
+  const addBookmark = useAddBookmark();
+  const removeBookmark = useRemoveBookmark();
+
   const cafes = data?.pages.flatMap((p) => p.cafes) ?? [];
+
+  const handleBookmarkToggle = (cafeId: string, isAdding: boolean) => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to save cafes');
+      return;
+    }
+    if (isAdding) {
+      addBookmark.mutate(cafeId);
+    } else {
+      removeBookmark.mutate(cafeId);
+    }
+  };
 
   const clearFilters = () => {
     setSearch('');
@@ -137,16 +157,25 @@ export default function CafesPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {cafes.map((cafe, i) => (
-              <motion.div
-                key={cafe.cafe_id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.04, 0.3) }}
-              >
-                <CafeCard cafe={cafe} />
-              </motion.div>
-            ))}
+            {cafes.map((cafe, i) => {
+              const _isBookmarked =
+                cafe.is_bookmarked ||
+                userBookmarks.some((b) => b.cafe_id === cafe.cafe_id);
+
+              return (
+                <motion.div
+                  key={cafe.cafe_id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.04, 0.3) }}
+                >
+                  <CafeCard 
+                    cafe={{ ...cafe, is_bookmarked: _isBookmarked }} 
+                    onBookmark={handleBookmarkToggle}
+                  />
+                </motion.div>
+              );
+            })}
           </div>
 
           {hasNextPage && (

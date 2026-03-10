@@ -119,6 +119,46 @@ export function useRemoveBookmark() {
   });
 }
 
+export function useEventBookmarks() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery<any[]>({
+    queryKey: queryKeys.user.eventBookmarks,
+    queryFn: () => userService.getEventFavourites(),
+    enabled: isAuthenticated,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    ...retryConfig,
+  });
+}
+
+export function useAddEventBookmark() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (eventId: string) => userService.addEventFavourite(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.eventBookmarks });
+      toast.success('Event saved to bookmarks!');
+    },
+    onError: () => {
+      toast.error('Failed to bookmark event.');
+    },
+  });
+}
+
+export function useRemoveEventBookmark() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (eventId: string) => userService.removeEventFavourite(eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.eventBookmarks });
+      toast.success('Removed from bookmarks.');
+    },
+    onError: () => {
+      toast.error('Failed to remove bookmark.');
+    },
+  });
+}
+
 export function useRemoveDevice() {
   const queryClient = useQueryClient();
   return useMutation<void, Error, string>({
