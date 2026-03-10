@@ -7,9 +7,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowLeft, Heart, Share2, MapPin, Calendar, Clock,
-  Users, ChevronDown, ChevronUp, Loader2, Crown, ExternalLink, CheckCircle,
+  Users, ChevronDown, ChevronUp, Loader2, Crown, ExternalLink, CheckCircle, Ticket, Minus, Plus
 } from 'lucide-react';
-import { useEventDetail, useRegisterForEvent, useJoinWaitlist } from '@/queries/useEventDetail';
+import { useEventDetail, useRegisterForEvent, useJoinWaitlist, useUserRegistration } from '@/queries/useEventDetail';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -31,8 +31,10 @@ export default function EventDetailPage() {
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [ticketCount, setTicketCount] = useState(1);
 
   const { data: event, isLoading } = useEventDetail(params.slug);
+  const { data: userRegistration } = useUserRegistration(event?.event_id);
   const registerMutation = useRegisterForEvent();
   const waitlistMutation = useJoinWaitlist();
 
@@ -81,11 +83,12 @@ export default function EventDetailPage() {
         if (!loaded) { toast.error('Payment service unavailable'); return; }
 
         // Register first (creates PENDING registration), then initiate payment
-        await eventService.registerForEvent(event.event_id);
+        await eventService.registerForEvent(event.event_id, ticketCount);
         isRegistrationCreated = true;
 
-        const order = await paymentService.initiateEventPayment(event.event_id, Number(event.base_price));
-        
+        const totalAmount = Number(event.base_price) * ticketCount;
+        const order = await paymentService.initiateEventPayment(event.event_id, totalAmount);
+
         const rzp = new window.Razorpay({
           // Use dynamic Key from backend, exactly like mobile app
           key: order.key || '', 
@@ -101,6 +104,7 @@ export default function EventDetailPage() {
               await paymentService.verifyEventPayment(event.event_id, response);
                 await queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
                 await queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets() });
+                await queryClient.invalidateQueries({ queryKey: ['event-registration', event.event_id] });
                 toast.success('Registration successful!');
                 router.push('/events/my-tickets');
               } catch {
@@ -132,9 +136,10 @@ export default function EventDetailPage() {
         }
       } else {
         try {
-          await eventService.registerForEvent(event.event_id);
+          await eventService.registerForEvent(event.event_id, ticketCount);
           await queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
           await queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets() });
+          await queryClient.invalidateQueries({ queryKey: ['event-registration', event.event_id] });
           toast.success('You\'re registered!');
           router.push('/events/my-tickets');
         } catch (err: any) {
@@ -173,6 +178,20 @@ export default function EventDetailPage() {
   const isRegistrationOpen = event.is_registration_open !== false;
   const isFull = event.seats_left !== undefined && event.seats_left <= 0;
 
+  const isRegistrationConfirmed = userRegistration?.status === "CONFIRMED" || userRegistration?.status === "CHECKED_IN";
+  const hasActiveRegistration = isRegistrationConfirmed || userRegistration?.status === "PENDING";
+  const userBookedTickets = hasActiveRegistration ? (userRegistration?.ticket_count ?? 0) : 0;
+  const maxPerUser = (event as any).max_tickets_per_user || 5;
+
+  const confirmedCount = (event as any).confirmed_registrations ?? event.current_registrations ?? 0;
+  const overallAvailable = event.max_capacity ? Math.max(0, event.max_capacity - confirmedCount) : 'Unlimited';
+  const perUserAllowance = Math.max(0, maxPerUser - userBookedTickets);
+  const remainingAllowance = overallAvailable === 'Unlimited' ? perUserAllowance : Math.min(perUserAllowance, overallAvailable as number);
+
+  const hasBookedTickets = userBookedTickets > 0;
+  const hasMaxedOut = remainingAllowance === 0 && hasBookedTickets;
+  const isSoldOut = overallAvailable === 0;
+
   return (
     <div className="max-w-4xl mx-auto pb-32">
       {/* Hero */}
@@ -202,6 +221,16 @@ export default function EventDetailPage() {
             </button>
           </div>
         </div>
+
+        {hasActiveRegistration && userBookedTickets > 0 && (
+          <button 
+            onClick={() => router.push(`/events/my-tickets/${event.event_id}`)}
+            className="absolute bottom-4 right-4 px-4 py-2 rounded-full bg-[#800020] text-white flex items-center gap-2 text-sm font-semibold shadow-lg hover:bg-[#C11E38] transition-all"
+          >
+            {isRegistrationConfirmed ? <Ticket size={16} /> : <Clock size={16} />}
+            {isRegistrationConfirmed ? 'Tickets' : 'Confirming...'}
+          </button>
+        )}
       </div>
 
       <div className="px-4 md:px-6 pt-5 space-y-5">
@@ -319,43 +348,84 @@ export default function EventDetailPage() {
       {/* Sticky bottom bar */}
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-[#0A0A0A]/95 backdrop-blur-sm border-t border-[#2A2A2A] p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div>
+          <div className="flex-shrink-0">
             {event.is_paid && event.base_price ? (
               <>
-                <p className="text-white/40 text-xs">Starting from</p>
-                <p className="text-white font-bold text-lg">{formatCurrency(event.base_price)}</p>
+                <p className="text-white font-bold text-lg">{formatCurrency(Number(event.base_price))}</p>
               </>
             ) : (
               <>
-                <p className="text-white/40 text-xs">Entry</p>
                 <p className="text-green-400 font-bold text-lg">Free</p>
               </>
             )}
+            <p className="text-white/40 text-xs mt-0.5 whitespace-nowrap">
+              {remainingAllowance > 0
+                ? `${remainingAllowance} remaining tickets`
+                : 'All slots booked'}
+            </p>
           </div>
 
-          {!isRegistrationOpen ? (
-            <button disabled className="flex-1 py-3 rounded-xl bg-white/10 text-white/40 font-semibold text-sm cursor-not-allowed">
-              Registration Closed
-            </button>
-          ) : isFull && event.is_waitlist_open ? (
-            <button
-              onClick={handleWaitlist}
-              disabled={waitlistMutation.isPending}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1E1E1E] border border-[#800020] text-[#800020] font-semibold text-sm hover:bg-[#800020]/10 transition-all"
-            >
-              {waitlistMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : null}
-              Join Waitlist
-            </button>
-          ) : (
-            <button
-              onClick={handleRegister}
-              disabled={registerMutation.isPending || paymentLoading || isFull}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#800020] hover:bg-[#C11E38] disabled:opacity-50 text-white font-semibold text-sm transition-all"
-            >
-              {(registerMutation.isPending || paymentLoading) ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-              {event.is_paid ? 'Buy Ticket' : 'Register Now'}
-            </button>
-          )}
+          <div className="flex-1 flex justify-end gap-3">
+            {userRegistration?.status === "PENDING" ? (
+              <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-xl bg-[#2A2A2A] text-white/60 font-semibold text-sm cursor-not-allowed">
+                <Clock size={16} /> Confirming...
+              </button>
+            ) : hasMaxedOut || (isSoldOut && hasBookedTickets) ? (
+              <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-xl bg-[#2A2A2A] text-white/60 font-semibold text-sm cursor-not-allowed">
+                <CheckCircle size={16} /> Booked
+              </button>
+            ) : isSoldOut && !event.is_waitlist_open ? (
+              <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-xl bg-white/10 text-white/40 font-semibold text-sm cursor-not-allowed">
+                Sold Out
+              </button>
+            ) : !isRegistrationOpen ? (
+              <button disabled className="flex-1 max-w-[200px] py-3 rounded-xl bg-white/10 text-white/40 font-semibold text-sm cursor-not-allowed">
+                Registration Closed
+              </button>
+            ) : isSoldOut && event.is_waitlist_open ? (
+              <button
+                onClick={handleWaitlist}
+                disabled={waitlistMutation.isPending}
+                className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1E1E1E] border border-[#800020] text-[#800020] font-semibold text-sm hover:bg-[#800020]/10 transition-all"
+              >
+                {waitlistMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : null}
+                Join Waitlist
+              </button>
+            ) : (
+              <div className="flex flex-1 justify-end items-center gap-3">
+                {remainingAllowance > 1 && isRegistrationOpen && (
+                  <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2A] rounded-full p-1 max-w-[120px]">
+                    <button
+                      onClick={() => setTicketCount(Math.max(1, ticketCount - 1))}
+                      disabled={ticketCount <= 1}
+                      className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2A2A2A] disabled:opacity-50 hover:bg-[#3A3A3A] transition-all text-white"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-8 text-center font-bold text-white text-sm">
+                      {ticketCount}
+                    </span>
+                    <button
+                      onClick={() => setTicketCount(Math.min(remainingAllowance as number, ticketCount + 1))}
+                      disabled={ticketCount >= (remainingAllowance as number)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center bg-[#2A2A2A] disabled:opacity-50 hover:bg-[#3A3A3A] transition-all text-white"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                )}
+                
+                <button
+                  onClick={handleRegister}
+                  disabled={registerMutation.isPending || paymentLoading}
+                  className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-xl bg-[#800020] hover:bg-[#C11E38] disabled:opacity-50 text-white font-semibold text-sm transition-all"
+                >
+                  {(registerMutation.isPending || paymentLoading) ? <Loader2 size={16} className="animate-spin" /> : null}
+                  {hasBookedTickets ? 'Book More' : event.is_paid ? `Pay ${formatCurrency(ticketCount * Number(event.base_price || 0))}` : 'Register'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

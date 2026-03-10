@@ -38,8 +38,11 @@ export const eventService = {
   },
 
   // POST /api/events/:eventId/register
-  async registerForEvent(eventId: string): Promise<any> {
-    const res = await api.post(`/events/${eventId}/register`, { ticket_count: 1 });
+  async registerForEvent(eventId: string, ticketCount: number = 1, tierId?: string): Promise<any> {
+    const res = await api.post(`/events/${eventId}/register`, { 
+      ticket_count: ticketCount,
+      ...(tierId && { tier_id: tierId })
+    });
     return res.data.data ?? res.data;
   },
 
@@ -54,6 +57,12 @@ export const eventService = {
     const res = await api.get("/events/my-registrations");
     const data = res.data.data ?? res.data;
     return Array.isArray(data) ? data : data.events ?? data.registrations ?? [];
+  },
+
+  // GET /api/events/:eventId/registration
+  async getUserRegistration(eventId: string): Promise<any> {
+    const res = await api.get(`/events/${eventId}/registration`);
+    return res.data.data ?? res.data;
   },
 
   // GET /api/events/:eventId/registration/qr

@@ -23,10 +23,22 @@ export function useEventDetail(slug: string) {
   });
 }
 
+export function useUserRegistration(eventId: string | undefined) {
+  return useQuery<any>({
+    queryKey: ['event-registration', eventId],
+    queryFn: () => eventId ? eventService.getUserRegistration(eventId) : null,
+    enabled: !!eventId,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    retry: 1, // Only retry once since a 404 is a valid state if not registered
+  });
+}
+
 export function useRegisterForEvent() {
   const queryClient = useQueryClient();
-  return useMutation<EventRegistration, Error, string>({
-    mutationFn: (eventId: string) => eventService.registerForEvent(eventId),
+  return useMutation<EventRegistration, Error, { eventId: string; ticketCount?: number; tierId?: string }>({
+    mutationFn: ({ eventId, ticketCount, tierId }) => 
+      eventService.registerForEvent(eventId, ticketCount, tierId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets() });
