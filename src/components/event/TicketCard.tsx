@@ -1,7 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
 import { Calendar, MapPin } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTime } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
@@ -86,7 +85,13 @@ export function TicketCard({ ticket, showQR = false, className }: TicketCardProp
           {showQR && ticket.qr_code && (
             <div className="flex flex-col items-center justify-center my-6">
               <div className="p-3 bg-white rounded-xl">
-                <QRCodeSVG value={ticket.qr_code} size={150} level="H" />
+                <img 
+                  src={ticket.qr_code} 
+                  alt="Ticket QR Code" 
+                  width={150} 
+                  height={150}
+                  className="rounded-lg"
+                />
               </div>
               <p className="text-xs text-white/50 mt-3 text-center">
                 Show this QR code at the entrance
