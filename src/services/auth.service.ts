@@ -1,5 +1,43 @@
 import api from "./api";
 import type { User, SignupData } from "@/types/user";
+import fpPromise from "@fingerprintjs/fingerprintjs";
+import { UAParser } from "ua-parser-js";
+
+let fpInstance: any = null;
+
+async function getDeviceMetadata() {
+  try {
+    if (!fpInstance) {
+      fpInstance = await fpPromise.load();
+    }
+    const result = await fpInstance.get();
+    const parser = new UAParser();
+    const resultUa = parser.getResult();
+    
+    // Fallbacks if UAParser isn't available
+    const browserName = resultUa.browser.name || 'Web Browser';
+    const osName = resultUa.os.name || 'Unknown OS';
+    
+    return {
+      device_id: result.visitorId, // Hardware fingerprint
+      device_name: `${browserName} on ${osName}`,
+      platform: "web"
+    };
+  } catch (error) {
+    console.error("Failed to generate fingerprint:", error);
+    // Graceful fallback purely on localStorage
+    let localDeviceId = localStorage.getItem("krown_web_device_id");
+    if (!localDeviceId) {
+      localDeviceId = `web_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
+      localStorage.setItem("krown_web_device_id", localDeviceId);
+    }
+    return {
+      device_id: localDeviceId,
+      device_name: "Krown Web App",
+      platform: "web"
+    };
+  }
+}
 
 export function mapUser(raw: any): User {
   return {
@@ -32,11 +70,13 @@ export const authService = {
     session_id?: string
   ): Promise<{ token: string; refresh_token: string; user: User }> {
     const formatted = phone.startsWith("+91") ? phone : `+91${phone}`;
+    const deviceMeta = await getDeviceMetadata();
+    
     const res = await api.post("/auth/otp/verify", {
       phone: formatted,
       otp,
-      ...(session_id ? { session_id } : {}),
-      // platform only accepts "android"|"ios" — omit for web
+      ...(session_id ? { session_id } : {})
+      // ...deviceMeta
     });
     const d = res.data.data ?? res.data;
     return { token: d.token, refresh_token: d.refresh_token, user: mapUser(d.user ?? d) };

@@ -62,7 +62,7 @@ export default function BookmarksPage() {
         </div>
 
         <div className="mb-6">
-          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} variant="pills" />
+          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
         </div>
 
         {activeTab === 'cafes' && (

@@ -21,6 +21,12 @@ export const rewardsService = {
     return res.data.data ?? res.data;
   },
 
+  // POST /api/redeems
+  async redeemDrink(data: { cafeId: string; itemId: string; userSubscriptionId: string }): Promise<any> {
+    const res = await api.post("/redeems", data);
+    return res.data.data ?? res.data;
+  },
+
   // GET /api/redeems/user — returns items with is_redeemed flag
   async getRedemptionHistory(): Promise<RedemptionRecord[]> {
     const res = await api.get("/redeems/user");

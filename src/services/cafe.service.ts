@@ -68,7 +68,29 @@ export const cafeService = {
   async getCafeMenu(cafeId: string): Promise<MenuCategory[]> {
     const res = await api.get(`/cafes/${cafeId}/menu`);
     const data = res.data.data ?? res.data;
-    return Array.isArray(data) ? data : data.menu ?? data.categories ?? [];
+    const items = Array.isArray(data) ? data : data.menu ?? data.categories ?? [];
+    
+    // Auto-group if it's a flat array of items (like from Postgres)
+    if (items.length > 0 && !('items' in items[0])) {
+       const grouped: Record<string, any[]> = {};
+       items.forEach((item: any) => {
+         const cat = item.category || 'Other';
+         if (!grouped[cat]) grouped[cat] = [];
+         grouped[cat].push({
+            item_id: item.item_id,
+            cafe_id: item.cafe_id,
+            name: item.item_name || item.name,
+            description: item.item_description || item.description,
+            price: Number(item.price),
+            image_url: item.cover_img || item.image_url,
+            category: cat,
+            is_recommended: item.recommended ?? item.is_recommended,
+            is_available: item.availability === 'available' || item.is_available === true || item.availability == null
+         });
+       });
+       return Object.keys(grouped).map(cat => ({ category: cat, items: grouped[cat] }));
+    }
+    return items;
   },
 
   // GET /api/cafes/:cafeId/images  — returns structured { main, gallery, menu }

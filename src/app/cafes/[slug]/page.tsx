@@ -38,6 +38,7 @@ export default function CafeDetailPage() {
   const { data: cafe, isLoading } = useCafeDetail(params.slug);
   const { data: menu = [] } = useCafeMenu(cafe?.cafe_id ?? '');
   const { data: reviews = [] } = useCafeReviews(cafe?.cafe_id ?? '');
+  const redeemableItems = menu.flatMap((c: any) => c.items || []).filter((item: any) => item.is_recommended && item.is_available);
 
   const { data: bookmarks = [] } = useBookmarks();
   const addBookmark = useAddBookmark();
@@ -349,15 +350,22 @@ export default function CafeDetailPage() {
         </AnimatePresence>
       </div>
 
-      {/* Sticky Book Button */}
+      {/* Sticky Bottom Actions */}
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0A0A0A] to-transparent pointer-events-none">
-        <div className="max-w-4xl mx-auto pointer-events-auto">
+        <div className="max-w-4xl mx-auto pointer-events-auto flex items-center gap-4">
           <Link
             href={`/cafes/${params.slug}/book`}
-            className="w-full flex items-center justify-center gap-2 bg-[#800020] hover:bg-[#C11E38] text-white py-3.5 rounded-xl font-semibold transition-all hover:shadow-lg hover:shadow-[#800020]/30 active:scale-95"
+            className="flex-1 flex items-center justify-center gap-2 bg-[#181818] border border-[#2A2A2A] hover:bg-[#2A2A2A] text-white py-3.5 rounded-xl font-semibold transition-all shadow-lg active:scale-95"
           >
             Book a Table
           </Link>
+          <button
+            disabled={redeemableItems.length === 0}
+            onClick={() => router.push(`/cafes/${params.slug}/redeem`)}
+            className="flex-1 flex items-center justify-center gap-2 bg-[#800020] hover:bg-[#C11E38] disabled:opacity-50 disabled:cursor-not-allowed text-white py-3.5 rounded-xl font-semibold transition-all hover:shadow-lg hover:shadow-[#800020]/30 active:scale-95"
+          >
+            Redeem A Drink
+          </button>
         </div>
       </div>
     </div>
