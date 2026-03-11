@@ -60,3 +60,14 @@ export function useCreateReview() {
     },
   });
 }
+
+export function useCafeImages(cafeId: string) {
+  return useQuery({
+    queryKey: queryKeys.cafes.images(cafeId),
+    queryFn: () => cafeService.getCafeImages(cafeId),
+    enabled: !!cafeId,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    ...retryConfig,
+  });
+}

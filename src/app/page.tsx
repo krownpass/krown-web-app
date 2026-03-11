@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, MapPin, ArrowRight, Sparkles, Play, Crown } from 'lucide-react';
+import { Search, MapPin, ArrowRight, Sparkles, Play, Crown, X } from 'lucide-react';
 import { CafeCard } from '@/components/cafe/CafeCard';
 import { EventCard } from '@/components/event/EventCard';
 import { KROWN_VIBES } from '@/lib/constants';
@@ -28,11 +28,48 @@ function SectionReveal({ children, delay = 0, className = "" }: { children: Reac
 export default function HomePage() {
   const { data: homeData, isLoading: isHomeLoading } = useHomeData();
   const { data: eventsData } = useEvents();
+  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
+  const [activeMediaIndex, setActiveMediaIndex] = useState<number>(0);
 
   const recommended = homeData?.recommendedCafes?.slice(0, 3) ?? [];
   const withOffers = homeData?.cafeWithOffers?.slice(0, 4) ?? [];
-  const stories = homeData?.stories?.slice(0, 4) ?? [];
+  const dbStories = homeData?.stories?.slice(0, 4) ?? [];
+  const defaultStories: any[] = [
+    { story_id: 'd1', title: 'The Rise of Chennai Speakeasies', description: 'Hidden doors, crafted cocktails, and jazz all night.', cover_img: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=1200&q=80' },
+    { story_id: 'd2', title: 'Late Night Coffee Run', description: 'Best spots open past 2 AM.', cover_img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80' },
+    { story_id: 'd3', title: 'Rooftop Season is Here', description: 'Cool breezes and panoramic views.', cover_img: 'https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=800&q=80' },
+    { story_id: 'd4', title: 'Weekend Brunch Guide', description: 'Pancakes, mimosas, and good vibes.', cover_img: 'https://images.unsplash.com/photo-1525648199074-cee30ba79a4a?w=800&q=80' }
+  ];
+  const stories = dbStories.length > 0 ? dbStories : defaultStories;
   const events = eventsData?.pages[0]?.events?.slice(0, 3) ?? [];
+
+  // Auto-advance stories
+  useEffect(() => {
+    if (activeStoryIndex === null || !dbStories) return;
+    
+    const currentStory = stories[activeStoryIndex];
+    const mediaCount = currentStory?.media?.length || 1;
+
+    const timer = setTimeout(() => {
+      if (activeMediaIndex < mediaCount - 1) {
+        // Next slide in current story
+        setActiveMediaIndex(prev => prev + 1);
+      } else {
+        // Next story group
+        setActiveStoryIndex(prev => {
+          if (prev === null) return null;
+          if (prev < stories.slice(0, 8).length - 1) {
+            setActiveMediaIndex(0); // Reset for new story
+            return prev + 1;
+          } else {
+            return null; // Close at end
+          }
+        });
+      }
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [activeStoryIndex, activeMediaIndex, dbStories, stories]);
 
   return (
     <div className="bg-[#000000] min-h-screen text-white selection:bg-[#800020] selection:text-white pb-32">
@@ -45,12 +82,13 @@ export default function HomePage() {
             initial={{ scale: 1.1 }}
             animate={{ scale: 1 }}
             transition={{ duration: 20, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
-            className="w-full h-full"
+            className="w-full h-full relative"
           >
             <Image 
               src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=2400&q=80"
               alt="Premium Cafe Experience"
               fill
+              sizes="100vw"
               className="object-cover opacity-40 mix-blend-luminosity"
               priority
             />
@@ -212,49 +250,49 @@ export default function HomePage() {
           </SectionReveal>
         )}
 
-        {/* 5. CINEMATIC STORIES (Full bleed grid) */}
-        {stories.length > 0 && (
+                {/* 5. CINEMATIC STORIES (Full bleed grid) */}
+        {stories.length >= 3 && (
           <SectionReveal>
             <div className="flex items-center gap-3 mb-10">
               <Play className="w-6 h-6 text-[#800020] fill-[#800020]" />
               <h2 className="font-playfair text-4xl font-bold text-white">The Nightlife Journal</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-[600px]">
-              {/* Featured Story (Left Large) */}
-              <div className="md:col-span-8 relative rounded-3xl overflow-hidden group cursor-pointer border border-white/5 h-full">
-                <Image 
-                  src={stories[0].cover_img} 
-                  alt={stories[0].title}
-                  fill
-                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-8 w-full">
-                  <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold text-white mb-4">LATEST STORY</span>
-                  <h3 className="font-playfair text-3xl md:text-5xl font-bold text-white mb-3 line-clamp-2">{stories[0].title}</h3>
-                  <p className="text-white/70 line-clamp-2 max-w-2xl">{stories[0].description}</p>
-                </div>
-              </div>
-
-              {/* Sidebar Stories */}
-              <div className="md:col-span-4 flex flex-col gap-4 h-full">
-                {stories.slice(1, 3).map(story => (
-                  <div key={story.story_id} className="relative flex-1 rounded-3xl overflow-hidden group cursor-pointer border border-white/5">
-                    <Image 
-                      src={story.cover_img} 
-                      alt={story.title}
-                      fill
-                      className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-6 w-full">
-                      <h3 className="font-playfair text-xl md:text-2xl font-bold text-white mb-2 line-clamp-2">{story.title}</h3>
-                      <p className="text-white/60 text-sm line-clamp-1">{story.description}</p>
+                       <div className="flex overflow-x-auto gap-6 pb-12 pt-4 w-full scrollbar-hide snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {stories.slice(0, 8).map((story, i) => (
+                <div 
+                  key={story?.story_id || i} 
+                  onClick={() => { setActiveStoryIndex(i); setActiveMediaIndex(0); }}
+                  className="relative flex-none w-[280px] md:w-[320px] h-[400px] md:h-[460px] rounded-2xl overflow-hidden cursor-pointer group snap-center border border-white/5 bg-[#0A0A0A] shadow-2xl"
+                >
+                  <Image 
+                    src={story?.cover_img || 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800&q=80'} 
+                    alt={story?.title || 'Story'}
+                    fill
+                    sizes="(max-width: 768px) 280px, 320px"
+                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/90 group-hover:to-black/80 transition-all duration-500 z-10" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#800020]/90 via-[#800020]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10" />
+                  
+                  <div className="absolute inset-0 p-6 flex flex-col justify-end z-20">
+                    <div className="transform translate-y-6 group-hover:translate-y-0 transition-transform duration-500 ease-out">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                        <span className="text-amber-500 text-[10px] font-bold tracking-widest uppercase">Featured</span>
+                      </div>
+                      <h3 className="font-playfair text-2xl md:text-3xl font-bold text-white mb-2 leading-tight drop-shadow-md">
+                        {story?.title || `Story ${i + 1}`}
+                      </h3>
+                      <div className="overflow-hidden max-h-0 group-hover:max-h-24 transition-all duration-500 ease-in-out">
+                        <p className="text-white/80 text-sm line-clamp-2 mt-2 font-light">
+                          {story?.description || 'Discover the most exclusive nightlife experiences and insider stories.'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </SectionReveal>
         )}
@@ -283,7 +321,103 @@ export default function HomePage() {
           </SectionReveal>
         )}
 
-      </div>
+      {/* Full Screen Story Viewer */}
+      {activeStoryIndex !== null && stories && stories.length > 0 && (
+        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+          <button 
+            onClick={() => setActiveStoryIndex(null)}
+            className="absolute top-6 right-6 md:top-10 md:right-10 z-[110] text-white hover:text-white/70 p-2 bg-black/20 backdrop-blur-md rounded-full transition-colors"
+          >
+            <X className="w-8 h-8 md:w-10 md:h-10" />
+          </button>
+
+          {/* Previous/Next Click Areas */}
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-[30%] z-[120] cursor-w-resize md:hover:bg-white/5 transition-colors"
+            onClick={() => {
+              if (activeMediaIndex > 0) {
+                setActiveMediaIndex(prev => prev - 1);
+              } else if (activeStoryIndex > 0) {
+                setActiveStoryIndex(prev => prev! - 1);
+                const prevStoryMediaCount = stories[activeStoryIndex - 1]?.media?.length || 1;
+                setActiveMediaIndex(prevStoryMediaCount - 1);
+              }
+            }}
+          />
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-[70%] z-[120] cursor-e-resize md:hover:bg-white/5 transition-colors"
+            onClick={() => {
+              const currentMediaCount = stories[activeStoryIndex]?.media?.length || 1;
+              if (activeMediaIndex < currentMediaCount - 1) {
+                setActiveMediaIndex(prev => prev + 1);
+              } else if (activeStoryIndex < stories.slice(0, 8).length - 1) {
+                setActiveStoryIndex(prev => prev! + 1);
+                setActiveMediaIndex(0);
+              } else {
+                setActiveStoryIndex(null);
+              }
+            }}
+          />
+
+          <div className="relative w-full h-full max-w-[500px] max-h-[900px] md:rounded-[24px] overflow-hidden shadow-2xl border border-white/10 flex flex-col justify-between" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 w-full z-[105] p-4 flex gap-2">
+              {Array.from({ length: stories[activeStoryIndex]?.media?.length || 1 }).map((_, i) => (
+                <div key={i} className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden">
+                  {i < activeMediaIndex ? (
+                    <div className="h-full bg-white w-full" />
+                  ) : i === activeMediaIndex ? (
+                    <motion.div 
+                      key={activeStoryIndex + '-' + activeMediaIndex} 
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 10, ease: "linear" }}
+                      className="h-full bg-white" 
+                    />
+                  ) : (
+                    <div className="h-full bg-white w-0" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Smart Viewer: Shows Native Video or Optimized Image for current media index */}
+            {stories[activeStoryIndex]?.media?.[activeMediaIndex]?.type === 'video' ? (
+              <video 
+                src={stories[activeStoryIndex]?.media[activeMediaIndex]?.uri}
+                autoPlay 
+                playsInline 
+                muted 
+                loop 
+                className="absolute inset-0 w-full h-full object-cover -z-10"
+              />
+            ) : (
+              <Image 
+                src={stories[activeStoryIndex]?.media?.[activeMediaIndex]?.uri || stories[activeStoryIndex]?.cover_img || 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800&q=80'} 
+                alt={stories[activeStoryIndex]?.title || 'Story segment'}
+                fill
+                sizes="100vw, (min-width: 500px) 500px"
+                className="object-cover -z-10"
+                priority
+              />
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 -z-10" />
+
+            <div className="px-6 pb-12 md:pb-16 mt-auto z-[105] pointer-events-none">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-block px-3 py-1 bg-[#800020] text-white text-xs font-bold uppercase tracking-widest rounded-full shadow-lg">Krown Story</span>
+                <span className="text-white/60 text-xs font-medium">Recently</span>
+              </div>
+              <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-lg">{stories[activeStoryIndex]?.title}</h2>
+              <p className="text-white/90 text-sm md:text-base leading-relaxed drop-shadow-md pb-2 pt-2 pointer-events-auto">
+                
+                {stories[activeStoryIndex]?.description || 'Swipe to see more updates, exclusive nightlife drops, and premium Krown events happening near you.'}
+              
+              </p>
+            </div>
+          </div>
+        </div>
+      )}      </div>
     </div>
   );
 }

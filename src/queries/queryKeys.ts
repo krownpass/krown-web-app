@@ -9,6 +9,7 @@ export const queryKeys = {
     details: () => [...queryKeys.cafes.all, "detail"] as const,
     detail: (slug: string) => [...queryKeys.cafes.details(), slug] as const,
     menu: (cafeId: string) => [...queryKeys.cafes.all, "menu", cafeId] as const,
+    images: (cafeId: string) => [...queryKeys.cafes.all, "images", cafeId] as const,
     reviews: (cafeId: string) => [...queryKeys.cafes.all, "reviews", cafeId] as const,
     themes: () => [...queryKeys.cafes.all, "themes"] as const,
     theme: (slug: string) => [...queryKeys.cafes.all, "theme", slug] as const,
