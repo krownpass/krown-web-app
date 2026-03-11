@@ -53,7 +53,30 @@ function EventsContent() {
     });
   }, [rawEvents, category]);
 
-  const featuredEvent = featuredEvents[0];
+  const { upcomingEvents, pastEvents } = useMemo(() => {
+    const now = Date.now();
+    const isPast = (e: any) => e.end_time ? new Date(e.end_time).getTime() < now : new Date(e.start_time).getTime() < now;
+    
+    const upcoming = events.filter(e => !isPast(e));
+    const past = events.filter(e => isPast(e))
+      .sort((a, b) => {
+        const timeA = a.end_time ? new Date(a.end_time).getTime() : new Date(a.start_time).getTime();
+        const timeB = b.end_time ? new Date(b.end_time).getTime() : new Date(b.start_time).getTime();
+        return timeB - timeA;
+      })
+      .slice(0, 5);
+      
+    return { upcomingEvents: upcoming, pastEvents: past };
+  }, [events]);
+
+  const featuredEvent = useMemo(() => {
+    const now = Date.now();
+    const activeFeatured = featuredEvents.find(e => {
+      const isPast = e.end_time ? new Date(e.end_time).getTime() < now : new Date(e.start_time).getTime() < now;
+      return !isPast;
+    });
+    return activeFeatured || featuredEvents[0];
+  }, [featuredEvents]);
 
   return (
     <div className="min-h-screen bg-[#050505]">
@@ -101,11 +124,23 @@ function EventsContent() {
               </div>
               
               <Link href={`/events/${featuredEvent.slug ?? featuredEvent.event_id}`}>
-                <button className="group relative px-8 py-4 bg-white text-black hover:text-white overflow-hidden rounded-full font-bold text-sm uppercase tracking-wider transition-colors duration-300 inline-flex items-center gap-2">
-                  <span className="relative z-10">Get Tickets</span>
-                  <ChevronRight size={16} className="relative z-10 group-hover:translate-x-1 transition-transform" />
-                  <div className="absolute inset-0 bg-[#800020] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                </button>
+                {(() => {
+                  const isPast = featuredEvent.end_time 
+                    ? new Date(featuredEvent.end_time).getTime() < Date.now() 
+                    : new Date(featuredEvent.start_time).getTime() < Date.now();
+                  
+                  return isPast ? (
+                    <button disabled className="group relative px-8 py-4 bg-white/10 text-white/50 cursor-not-allowed overflow-hidden rounded-full font-bold text-sm uppercase tracking-wider inline-flex items-center gap-2 backdrop-blur-md">
+                      <span className="relative z-10">Event Ended</span>
+                    </button>
+                  ) : (
+                    <button className="group relative px-8 py-4 bg-white text-black hover:text-white overflow-hidden rounded-full font-bold text-sm uppercase tracking-wider transition-colors duration-300 inline-flex items-center gap-2">
+                      <span className="relative z-10">Get Tickets</span>
+                      <ChevronRight size={16} className="relative z-10 group-hover:translate-x-1 transition-transform" />
+                      <div className="absolute inset-0 bg-[#800020] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                    </button>
+                  );
+                })()}
               </Link>
             </motion.div>
           </div>
@@ -184,21 +219,50 @@ function EventsContent() {
               <EmptyState icon="Calendar" title="No events found" subtitle="Try adjusting your search or filters to find what you're looking for." />
             </div>
           ) : (
-            <div className="flex flex-col gap-6">
-              <AnimatePresence mode="popLayout">
-                {events.map((event, i) => (
-                  <motion.div 
-                    layout
-                    key={event.event_id} 
-                    initial={{ opacity: 0, scale: 0.98, y: 20 }} 
-                    animate={{ opacity: 1, scale: 1, y: 0 }} 
-                    exit={{ opacity: 0, scale: 0.98, y: -20 }}
-                    transition={{ duration: 0.5, delay: i * 0.05, ease: "easeOut" }}
-                  >
-                    <EventCard event={event} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+            <div className="flex flex-col gap-12">
+              {upcomingEvents.length > 0 && (
+                <div className="flex flex-col gap-6">
+                  {pastEvents.length > 0 && <h3 className="text-white font-playfair text-3xl font-bold mb-2">Upcoming Events</h3>}
+                  <AnimatePresence mode="popLayout">
+                    {upcomingEvents.map((event, i) => (
+                      <motion.div 
+                        layout
+                        key={event.event_id} 
+                        initial={{ opacity: 0, scale: 0.98, y: 20 }} 
+                        animate={{ opacity: 1, scale: 1, y: 0 }} 
+                        exit={{ opacity: 0, scale: 0.98, y: -20 }}
+                        transition={{ duration: 0.5, delay: i * 0.05, ease: "easeOut" }}
+                      >
+                        <EventCard event={event} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {pastEvents.length > 0 && (
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center gap-4 mt-8 mb-2 border-t border-white/10 pt-8">
+                    <h3 className="text-white/60 font-playfair text-3xl font-bold">Past Events</h3>
+                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-white/40 uppercase tracking-widest">Recent 5</span>
+                  </div>
+                  <AnimatePresence mode="popLayout">
+                    {pastEvents.map((event, i) => (
+                      <motion.div 
+                        layout
+                        key={event.event_id} 
+                        initial={{ opacity: 0, scale: 0.98, y: 20 }} 
+                        animate={{ opacity: 1, scale: 1, y: 0 }} 
+                        exit={{ opacity: 0, scale: 0.98, y: -20 }}
+                        transition={{ duration: 0.5, delay: i * 0.05, ease: "easeOut" }}
+                        className="opacity-75 hover:opacity-100 transition-opacity duration-300"
+                      >
+                        <EventCard event={event} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
 
               {hasNextPage && (
                 <div ref={loadMoreRef} className="pt-12 flex justify-center h-10 w-full mb-10">

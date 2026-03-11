@@ -60,6 +60,7 @@ export function EventCard({ event, className }: EventCardProps) {
     }
   };
 
+  const isPastEvent = event.end_time ? new Date(event.end_time).getTime() < Date.now() : new Date(event.start_time).getTime() < Date.now();
   const startDate = new Date(event.start_time);
   const month = startDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
   const day = startDate.getDate();
@@ -184,9 +185,15 @@ export function EventCard({ event, className }: EventCardProps) {
                 </div>
                 
                 <div className="ml-4 shrink-0">
-                  <span className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-sm font-medium text-white group-hover:bg-[#800020] group-hover:border-[#800020] transition-all duration-300 shadow-lg">
-                    Get Tickets
-                  </span>
+                  {isPastEvent ? (
+                    <span className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white/50 cursor-not-allowed uppercase tracking-wider text-[10px]">
+                      Event Ended
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-sm font-medium text-white group-hover:bg-[#800020] group-hover:border-[#800020] transition-all duration-300 shadow-lg">
+                      Get Tickets
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

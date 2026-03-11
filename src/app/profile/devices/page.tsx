@@ -12,7 +12,8 @@ import { useDevices, useRemoveDevice } from '@/queries/useUser';
 import { formatRelativeTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
-function DeviceIcon({ type }: { type: string }) {
+function DeviceIcon({ type }: { type?: string }) {
+  if (!type) return <Smartphone size={18} className="text-white/60" />;
   if (type.includes('tablet')) return <Tablet size={18} className="text-white/60" />;
   if (type.includes('desktop') || type.includes('laptop')) return <Monitor size={18} className="text-white/60" />;
   return <Smartphone size={18} className="text-white/60" />;

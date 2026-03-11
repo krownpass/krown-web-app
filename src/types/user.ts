@@ -22,14 +22,13 @@ export interface UserDevice {
 }
 
 export interface Transaction {
-  transaction_id: string;
-  type: 'dining' | 'krown' | 'reward' | 'refund';
-  amount: number;
-  description: string;
-  status: 'success' | 'pending' | 'failed' | 'refunded';
-  created_at: string;
-  cafe_name?: string;
-  event_name?: string;
+  id: string;
+  source: 'subscription' | 'dineout' | string;
+  amount: string | number;
+  title: string;
+  status: string;
+  txn_date: string;
+  razorpay_payment_id?: string | null;
 }
 
 export interface SignupData {

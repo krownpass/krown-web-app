@@ -14,7 +14,8 @@ export function formatCurrency(amount: number, currency = "INR"): string {
   }).format(amount);
 }
 
-export function formatDate(date: string | Date, formatStr = "MMM d, yyyy"): string {
+export function formatDate(date: string | Date | undefined | null, formatStr = "MMM d, yyyy"): string {
+  if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("en-IN", {
     day: "numeric",
@@ -23,7 +24,8 @@ export function formatDate(date: string | Date, formatStr = "MMM d, yyyy"): stri
   });
 }
 
-export function formatTime(date: string | Date): string {
+export function formatTime(date: string | Date | undefined | null): string {
+  if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleTimeString("en-IN", {
     hour: "2-digit",

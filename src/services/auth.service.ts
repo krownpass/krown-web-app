@@ -84,7 +84,9 @@ export const authService = {
 
   // POST /api/auth/signup
   async signup(data: SignupData): Promise<{ token: string; refresh_token: string; user: User }> {
-    const res = await api.post("/auth/signup", data);
+    const deviceMeta = await getDeviceMetadata();
+    const payload = { ...data, ...deviceMeta };
+    const res = await api.post("/auth/signup", payload);
     const d = res.data.data ?? res.data;
     return { token: d.token, refresh_token: d.refresh_token, user: mapUser(d.user ?? d) };
   },

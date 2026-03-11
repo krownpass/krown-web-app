@@ -50,7 +50,7 @@ export function useMarkAsRead() {
 
       queryClient.setQueryData<Notification[]>(queryKeys.user.notifications, (old) => {
         if (!old) return old;
-        return old.map(n => n.id === id ? { ...n, is_read: true } : n);
+        return old.map(n => n.notification_id === id ? { ...n, is_read: true } : n);
       });
       queryClient.setQueryData<number>(queryKeys.user.unreadCount, (old) => {
         return old ? Math.max(0, old - 1) : 0;

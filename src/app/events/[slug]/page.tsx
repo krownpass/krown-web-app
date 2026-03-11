@@ -250,6 +250,10 @@ export default function EventDetailPage() {
   const thingsToKnow = event.instructions ?? [];
   const visibleThingsToKnow = showAllThingsToKnow ? thingsToKnow : thingsToKnow.slice(0, 3);
 
+  const isPastEvent = event.end_time 
+    ? new Date(event.end_time).getTime() < Date.now() 
+    : new Date(event.start_time).getTime() < Date.now();
+
   const getEventTypeLabel = () => {
     switch (event.event_type) {
       case 'KROWN_EXCLUSIVE': return 'Krown Exclusive';
@@ -673,7 +677,11 @@ export default function EventDetailPage() {
 
               {/* Action Buttons */}
               <div className="flex-1 flex justify-end gap-3">
-                {userRegistration?.status === "PENDING" ? (
+                {isPastEvent ? (
+                  <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.06] text-white/40 font-semibold text-sm cursor-not-allowed">
+                    <CheckCircle size={16} className="opacity-50" /> Event Ended
+                  </button>
+                ) : userRegistration?.status === "PENDING" ? (
                   <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.06] text-white/40 font-semibold text-sm cursor-not-allowed">
                     <Clock size={16} /> Confirming...
                   </button>

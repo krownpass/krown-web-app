@@ -83,35 +83,7 @@ export function BookingForm({ cafeId, onSubmit, isLoading }: BookingFormProps) {
 
   return (
     <div className="space-y-6">
-      {/* Booking type */}
-      <div>
-        <p className="text-sm font-medium text-white/70 mb-3">Booking Type</p>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { value: 'standard', label: 'Standard', sublabel: 'Free', desc: 'Walk-in priority queue' },
-            { value: 'priority', label: 'Priority', sublabel: '₹50', desc: 'Guaranteed table reservation' },
-          ].map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setBookingType(opt.value as 'standard' | 'priority')}
-              className={cn(
-                'p-4 rounded-xl border text-left transition-all',
-                bookingType === opt.value
-                  ? 'bg-[#800020]/20 border-[#800020]/50 text-white'
-                  : 'bg-[#1A1A1A] border-[#2A2A2A] text-white/60 hover:border-[#3A3A3A]'
-              )}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-sm">{opt.label}</span>
-                <span className={cn('text-xs font-bold', bookingType === opt.value ? 'text-[#C11E38]' : 'text-white/40')}>
-                  {opt.sublabel}
-                </span>
-              </div>
-              <p className="text-xs opacity-70">{opt.desc}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Guest counter */}
       <div>
@@ -226,7 +198,7 @@ export function BookingForm({ cafeId, onSubmit, isLoading }: BookingFormProps) {
 
       {/* Submit */}
       <Button fullWidth size="lg" loading={isLoading} disabled={!canSubmit} onClick={handleSubmit}>
-        {bookingType === 'priority' ? 'Pay ₹50 & Book' : 'Book Now'}
+        {'Book Table'}
       </Button>
     </div>
   );
