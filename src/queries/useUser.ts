@@ -82,6 +82,7 @@ export function useUpdateProfile() {
     mutationFn: (data: UpdateProfileData) => userService.updateProfile(data),
     onSuccess: (updatedUser) => {
       queryClient.setQueryData(queryKeys.user.profile, updatedUser);
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.profile });
       if (token) setUser(updatedUser, token);
       toast.success('Profile updated successfully!');
     },

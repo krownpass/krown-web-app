@@ -45,7 +45,7 @@ export function mapUser(raw: any): User {
     name: raw.user_name ?? raw.name ?? "",
     email: raw.user_email ?? raw.email,
     phone: raw.user_mobile_no ?? raw.phone ?? "",
-    profile_image: raw.profile_image ?? raw.user_profile_image,
+    profile_image: raw.avatar_url ?? raw.profile_image ?? raw.user_profile_image,
     referral_code: raw.referral_code,
     krown_points: raw.krown_points,
     has_krown_pass: raw.is_krown_subscriber ?? raw.has_krown_pass,

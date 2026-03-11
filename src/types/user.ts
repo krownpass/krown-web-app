@@ -42,5 +42,5 @@ export interface SignupData {
 export interface UpdateProfileData {
   name?: string;
   email?: string;
-  profile_image?: string;
+  profile_image?: File | null;
 }

@@ -84,6 +84,7 @@ export interface EventSeat {
 export interface EventFilters {
   search?: string;
   category?: string;
+  event_type?: string;
   is_paid?: boolean;
   date_from?: string;
   date_to?: string;

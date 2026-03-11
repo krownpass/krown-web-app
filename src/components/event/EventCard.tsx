@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users } from 'lucide-react';
+import { MapPin, Calendar, Users, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTime, getCapacityPercent } from '@/lib/utils';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -21,89 +21,108 @@ export function EventCard({ event, className }: EventCardProps) {
     event.max_capacity
   );
 
+  const startDate = new Date(event.start_time);
+  const month = startDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const day = startDate.getDate();
+
   return (
     <motion.div
-      whileHover={{ scale: 1.02, y: -3 }}
+      whileHover={{ scale: 1.01, y: -2 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className={cn('group', className)}
+      className={cn('group relative block', className)}
     >
       <Link href={`/events/${event.slug ?? event.event_id}`}>
-        <div className="bg-[#1E1E1E] border border-[#2A2A2A] rounded-xl overflow-hidden hover:border-[#3A3A3A] hover:shadow-2xl hover:shadow-black/40 transition-all duration-300">
-          {/* Cover image */}
-          <div className="relative aspect-[16/9] overflow-hidden">
+        <div className="flex flex-col md:flex-row bg-[#0A0A0A] border border-white/[0.05] rounded-2xl overflow-hidden hover:border-[#800020]/50 hover:shadow-[0_0_30px_rgba(128,0,32,0.15)] transition-all duration-500">
+          
+          {/* Image & Date Block */}
+          <div className="relative w-full md:w-[35%] h-[240px] md:h-auto md:min-h-[260px] overflow-hidden shrink-0">
             <ImageWithFallback
               src={event.cover_image ?? '/placeholder-event.jpg'}
               fallbackSrc="/placeholder-event.jpg"
               alt={event.title}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              sizes="(max-width: 768px) 100vw, 35vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            {/* Dramatic overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#0A0A0A] via-black/40 to-transparent opacity-90" />
+            
+            {/* Prominent Date Block */}
+            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl px-4 py-2 flex flex-col items-center justify-center min-w-[65px] shadow-2xl">
+              <span className="text-[#800020] text-[10px] font-bold tracking-widest uppercase mb-0.5">{month}</span>
+              <span className="text-white text-2xl font-black font-playfair leading-none">{day}</span>
+            </div>
 
             {/* Category badge */}
-            {event.category && (
-              <div className="absolute top-3 left-3">
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#800020]/90 text-white">
+            <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+              {event.category && (
+                <span className="text-[10px] font-bold px-3 py-1.5 rounded-sm bg-white text-black uppercase tracking-wider border border-white/20 shadow-lg">
                   {event.category}
                 </span>
-              </div>
-            )}
-
-            {/* Price badge */}
-            <div className="absolute top-3 right-3">
-              <span
-                className={cn(
-                  'text-xs font-bold px-2.5 py-1 rounded-full',
-                  event.is_paid
-                    ? 'bg-black/60 text-white backdrop-blur-sm'
-                    : 'bg-green-500/90 text-white'
-                )}
-              >
-                {event.is_paid ? `₹${event.base_price}` : 'Free'}
-              </span>
+              )}
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-3">
-            <h3 className="font-semibold text-white text-sm leading-snug mb-2 line-clamp-2">
-              {event.title}
-            </h3>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs text-white/50">
-                <Calendar size={11} className="shrink-0" />
-                <span>
-                  {formatDate(event.start_time)} · {formatTime(event.start_time)}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-white/50">
-                <MapPin size={11} className="shrink-0" />
-                <span className="truncate">{event.venue_name}</span>
-              </div>
-            </div>
-
-            {/* Capacity bar */}
-            {event.max_capacity != null && (
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1 text-xs text-white/40">
-                    <Users size={10} />
-                    <span>{event.seats_left != null ? `${event.seats_left} left` : `${capacityPercent}% filled`}</span>
+          <div className="flex-1 p-5 md:p-8 flex flex-col justify-center relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col h-full justify-between gap-6">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3 text-xs font-medium text-white/50 tracking-wide uppercase">
+                     <span className="flex items-center gap-1.5 border border-white/10 px-2.5 py-1 rounded-md bg-white/[0.02]">
+                       <Clock size={12} className="text-[#800020]" />
+                       {formatTime(event.start_time)}
+                     </span>
+                     {event.is_paid ? (
+                       <span className="text-white shrink-0 block border border-[#800020]/30 bg-[#800020]/10 px-2.5 py-1 rounded-md text-[11px] uppercase">₹{event.base_price}</span>
+                     ) : (
+                       <span className="text-white/70 block shrink-0 border border-white/10 px-2.5 py-1 rounded-md bg-white/[0.02]">Free</span>
+                     )}
                   </div>
-                  {event.seats_left != null && event.seats_left <= 10 && (
-                    <span className="text-xs text-[#C11E38] font-medium">Almost full!</span>
+                </div>
+
+                <h3 className="font-playfair font-bold text-white text-2xl md:text-3xl leading-tight mb-3 group-hover:text-[#800020] transition-colors duration-300">
+                  {event.title}
+                </h3>
+                
+                <div className="flex items-center gap-2 text-sm text-white/60">
+                  <MapPin size={14} className="shrink-0 text-[#800020]/70" />
+                  <span className="truncate">{event.venue_name}</span>
+                </div>
+              </div>
+
+              {/* Action & Capacity Row */}
+              <div className="flex items-end justify-between mt-auto pt-5 border-t border-white/[0.05]">
+                <div className="flex-1 max-w-[220px]">
+                  {event.max_capacity != null && (
+                    <div className="space-y-2.5">
+                       <div className="flex items-center justify-between text-[10px] text-white/40 font-bold uppercase tracking-widest">
+                         <span>Tickets Sold</span>
+                         <span>{capacityPercent}%</span>
+                       </div>
+                       <ProgressBar
+                         value={capacityPercent}
+                         height={3}
+                         color={capacityPercent >= 80 ? '#C11E38' : '#800020'}
+                       />
+                       {event.seats_left != null && event.seats_left <= 10 && (
+                         <p className="text-[10px] text-[#C11E38] font-bold tracking-widest uppercase">Almost Sold Out</p>
+                       )}
+                    </div>
                   )}
                 </div>
-                <ProgressBar
-                  value={capacityPercent}
-                  height={4}
-                  color={capacityPercent >= 80 ? '#C11E38' : '#800020'}
-                />
+                
+                <div className="ml-4 shrink-0">
+                  <span className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-sm font-medium text-white group-hover:bg-[#800020] group-hover:border-[#800020] transition-all duration-300 shadow-lg">
+                    Get Tickets
+                  </span>
+                </div>
               </div>
-            )}
+            </div>
           </div>
+
         </div>
       </Link>
     </motion.div>

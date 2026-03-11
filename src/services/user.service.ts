@@ -13,8 +13,26 @@ export const userService = {
 
   // PATCH /api/users/update-profile
   async updateProfile(data: UpdateProfileData): Promise<User> {
-    const res = await api.patch("/users/update-profile", data);
-    return mapUser(res.data.data ?? res.data);
+    const formData = new FormData();
+    if (data.name) formData.append("user_name", data.name);
+    if (data.email) formData.append("user_email", data.email);
+    if (data.profile_image instanceof File) {
+      formData.append("file", data.profile_image);
+    }
+    
+    const res = await api.patch("/users/update-profile", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      }
+    });
+
+    const user = mapUser(res.data.data ?? res.data);
+    if (user.profile_image && data.profile_image instanceof File) {
+      // Append timestamp to bust browser cache for the newly uploaded image
+      const separator = user.profile_image.includes("?") ? "&" : "?";
+      user.profile_image = `${user.profile_image}${separator}t=${Date.now()}`;
+    }
+    return user;
   },
 
   // GET /api/users/favourites

@@ -59,138 +59,170 @@ export default function CafesPage() {
   const hasFilters = search || selectedVibe || openNow;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-[#0A0A0A] pb-12">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="font-playfair text-3xl font-bold text-white mb-1">Explore Cafés</h1>
-        <p className="text-white/40 text-sm">Discover Chennai&apos;s finest cafés</p>
-      </motion.div>
+      <div className="w-full bg-[#121212] border-b border-[#2A2A2A] filter drop-shadow">
+        <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 py-10 md:py-16">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 className="font-playfair text-4xl md:text-5xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/50">
+              Explore Cafés
+            </h1>
+            <p className="text-white/40 text-sm md:text-base">
+              Discover Chennai&apos;s finest premium spots
+            </p>
+          </motion.div>
+        </div>
+      </div>
 
-      {/* Search */}
-      <div className="flex gap-3 mb-4">
-        <div className="flex-1 flex items-center gap-2 bg-[#1E1E1E] border border-[#2A2A2A] rounded-xl px-4 py-2.5 focus-within:border-[#800020] transition-colors">
-          <Search size={16} className="text-white/40 flex-shrink-0" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search cafés..."
-            className="bg-transparent text-white text-sm flex-1 outline-none placeholder:text-white/30"
-          />
-          {search && (
-            <button onClick={() => setSearch('')}>
-              <X size={14} className="text-white/40 hover:text-white" />
+      {/* Toolbar Strip */}
+      <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 -mt-8 relative z-10 mb-10">
+        <div className="bg-white/[0.02] border border-white/[0.05] shadow-sm backdrop-blur-md rounded-2xl p-4 flex flex-col xl:flex-row gap-4 xl:items-center justify-between">
+          {/* Search */}
+          <div className="w-full xl:w-80 flex-shrink-0 flex items-center gap-2 bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl px-4 py-3 focus-within:border-[#800020] transition-colors">
+            <Search size={16} className="text-white/40 flex-shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search cafés..."
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="bg-transparent text-white text-sm flex-1 outline-none placeholder:text-white/30 min-w-0"
+            />
+            <button 
+              onClick={() => setSearch('')}
+              tabIndex={search ? 0 : -1}
+              className={`flex-shrink-0 p-1 flex items-center justify-center transition-opacity ${
+                search ? 'opacity-100 cursor-pointer' : 'opacity-0 cursor-default pointer-events-none'
+              }`}
+            >
+              <X size={14} className="text-white/40 hover:text-white transition-colors" />
             </button>
-          )}
-        </div>
-        <button className="p-2.5 bg-[#1E1E1E] border border-[#2A2A2A] rounded-xl hover:border-[#800020] transition-colors">
-          <SlidersHorizontal size={18} className="text-white/60" />
-        </button>
-      </div>
-
-      {/* Filter chips */}
-      <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
-        <button
-          onClick={() => setOpenNow(!openNow)}
-          className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
-            openNow ? 'bg-[#800020] border-[#800020] text-white' : 'border-[#2A2A2A] text-white/50 hover:border-[#3A3A3A]'
-          }`}
-        >
-          Open Now
-        </button>
-        {vibeFilters.map((vibe) => (
-          <button
-            key={vibe}
-            onClick={() => setSelectedVibe(selectedVibe === vibe ? '' : vibe)}
-            className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
-              selectedVibe === vibe
-                ? 'bg-[#800020] border-[#800020] text-white'
-                : 'border-[#2A2A2A] text-white/50 hover:border-[#3A3A3A]'
-            }`}
-          >
-            {vibe}
-          </button>
-        ))}
-        {hasFilters && (
-          <button
-            onClick={clearFilters}
-            className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Sort */}
-      <div className="flex items-center gap-3 mb-6 text-sm text-white/40">
-        <span>Sort:</span>
-        {(['rating', 'distance', 'newest'] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setSortBy(s)}
-            className={`capitalize transition-colors ${sortBy === s ? 'text-[#800020]' : 'hover:text-white/60'}`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-      {/* Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-44 w-full rounded-xl" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-            </div>
-          ))}
-        </div>
-      ) : cafes.length === 0 ? (
-        <EmptyState
-          icon="Coffee"
-          title="No cafés found"
-          subtitle="Try adjusting your filters or search term"
-          actionLabel={hasFilters ? 'Clear filters' : undefined}
-          onAction={hasFilters ? clearFilters : undefined}
-        />
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {cafes.map((cafe, i) => {
-              const _isBookmarked =
-                cafe.is_bookmarked ||
-                userBookmarks.some((b) => b.cafe_id === cafe.cafe_id);
-
-              return (
-                <motion.div
-                  key={cafe.cafe_id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.04, 0.3) }}
-                >
-                  <CafeCard 
-                    cafe={{ ...cafe, is_bookmarked: _isBookmarked }} 
-                    onBookmark={handleBookmarkToggle}
-                  />
-                </motion.div>
-              );
-            })}
           </div>
 
-          {hasNextPage && (
-            <div className="flex justify-center mt-8">
+          <div className="flex-1 w-full min-w-0 flex flex-col xl:flex-row xl:items-center gap-4 justify-between">
+            {/* Filter chips (Scrollable) */}
+            <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 xl:pb-0">
               <button
-                onClick={() => fetchNextPage()}
-                disabled={isFetchingNextPage}
-                className="px-6 py-3 bg-[#1E1E1E] border border-[#2A2A2A] text-white/60 rounded-xl text-sm hover:border-[#800020] transition-all disabled:opacity-50"
+                onClick={() => setOpenNow(!openNow)}
+                className={`flex-shrink-0 text-sm px-4 py-2 rounded-full border transition-all ${
+                  openNow 
+                    ? 'bg-[#800020] border-[#800020] text-white shadow-[0_0_15px_rgba(128,0,32,0.3)]'
+                    : 'bg-[#1A1A1A] border-[#2A2A2A] text-white/60 hover:border-[#3A3A3A] hover:text-white'
+                }`}
               >
-                {isFetchingNextPage ? 'Loading...' : 'Load more'}
+                Open Now
               </button>
+              {vibeFilters.map((vibe) => (
+                <button
+                  key={vibe}
+                  onClick={() => setSelectedVibe(selectedVibe === vibe ? '' : vibe)}
+                  className={`flex-shrink-0 text-sm px-4 py-2 rounded-full border transition-all ${
+                    selectedVibe === vibe
+                      ? 'bg-[#800020] border-[#800020] text-white shadow-[0_0_15px_rgba(128,0,32,0.3)]'
+                      : 'bg-[#1A1A1A] border-[#2A2A2A] text-white/60 hover:border-[#3A3A3A] hover:text-white'
+                  }`}
+                >
+                  {vibe}
+                </button>
+              ))}
+              {hasFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="flex-shrink-0 text-sm px-4 py-2 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
             </div>
-          )}
-        </>
-      )}
+
+            {/* Sort Options (Pinned) */}
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <div className="hidden xl:block w-px h-6 bg-white/10 mx-1"></div>
+              <div className="flex items-center gap-3 text-sm text-white/40">
+                <SlidersHorizontal size={14} />
+                {(['rating', 'distance', 'newest'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSortBy(s)}
+                    className={`capitalize transition-colors ${sortBy === s ? 'text-[#800020] font-medium' : 'hover:text-white/80'}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8">
+        {/* Grid */}
+        {isLoading ? (
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6 pb-6">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="space-y-4 break-inside-avoid">
+                <Skeleton className={`w-full rounded-2xl md:rounded-3xl bg-white/[0.02] border border-white/[0.05] ${i % 4 === 0 ? 'h-[300px]' : 'h-[200px]'}`} />
+                <div className="space-y-2 px-2">
+                  <Skeleton className="h-5 w-3/4 bg-white/[0.02]" />
+                  <Skeleton className="h-4 w-1/2 bg-white/[0.02]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : cafes.length === 0 ? (
+          <div className="pt-10">
+            <EmptyState
+              icon="Coffee"
+              title="No cafés found"
+              subtitle="Try adjusting your filters or search term"
+              actionLabel={hasFilters ? 'Clear filters' : undefined}
+              onAction={hasFilters ? clearFilters : undefined}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6 pb-6">
+              {cafes.map((cafe, i) => {
+                const _isBookmarked =
+                  cafe.is_bookmarked ||
+                  userBookmarks.some((b) => b.cafe_id === cafe.cafe_id);
+
+                const aspect = i % 5 === 0 ? 'tall' : i % 3 === 0 ? 'square' : 'standard';
+
+                return (
+                  <motion.div
+                    key={cafe.cafe_id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.05, 0.4) }}
+                    className="break-inside-avoid"
+                  >
+                    <CafeCard 
+                      cafe={{ ...cafe, is_bookmarked: _isBookmarked }} 
+                      onBookmark={handleBookmarkToggle}
+                      aspectRatio={aspect}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {hasNextPage && (
+              <div className="flex justify-center mt-12 mb-8">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="px-8 py-3.5 bg-gradient-to-r from-[#800020] to-[#A00020] rounded-xl text-white font-medium shadow-[0_0_20px_rgba(128,0,32,0.3)] hover:shadow-[0_0_30px_rgba(128,0,32,0.5)] transition-all disabled:opacity-50"
+                >
+                  {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
