@@ -145,7 +145,12 @@ export const cafeService = {
   },
 
   async createReview(data: CreateReviewData): Promise<Review> {
-    const res = await api.post(`/cafes/${data.cafe_id}/reviews`, data);
+    const payload = {
+      ratings: data.rating,
+      description: data.comment,
+      images: data.images,
+    };
+    const res = await api.post(`/cafes/${data.cafe_id}/reviews`, payload);
     return res.data.data ?? res.data;
   },
 
@@ -174,6 +179,12 @@ export const cafeService = {
     return raw.slice(0, 12).map(mapCafe);
   },
 
+  async getSimilarCafes(cafeId: string, limit = 10): Promise<Cafe[]> {
+    const res = await api.get(`/cafes/${cafeId}/similar`, { params: { limit } });
+    const data = res.data.data ?? res.data;
+    const raw: any[] = Array.isArray(data) ? data : data.cafes ?? [];
+    return raw.map(mapCafe);
+  },
   async getNearbyCafes(lat: number, lng: number): Promise<Cafe[]> {
     const res = await api.get("/cafes", { params: { userLat: lat, userLng: lng } });
     const data = res.data.data ?? res.data;

@@ -71,3 +71,14 @@ export function useCafeImages(cafeId: string) {
     ...retryConfig,
   });
 }
+
+export function useSimilarCafes(cafeId: string) {
+  return useQuery<Cafe[]>({
+    queryKey: queryKeys.cafes.similar(cafeId),
+    queryFn: () => cafeService.getSimilarCafes(cafeId),
+    enabled: !!cafeId,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    ...retryConfig,
+  });
+}

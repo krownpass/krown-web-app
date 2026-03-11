@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -7,10 +6,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  ArrowLeft, Heart, Share2, MapPin, Phone, Mail, Star,
-  ChevronRight, Clock, Crown, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon, Navigation, X
+  ArrowLeft, Heart, Share2, MapPin, Phone, Mail, Star, ChevronRight, MessageSquare, Clock, Crown, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon, Navigation, X
 } from 'lucide-react';
-import { useCafeDetail, useCafeMenu, useCafeReviews, useCafeImages } from '@/queries/useCafeDetail';
+import { useCafeDetail, useCafeMenu, useCafeReviews, useCafeImages, useSimilarCafes } from '@/queries/useCafeDetail';
 import { useBookmarks, useAddBookmark, useRemoveBookmark } from '@/queries/useUser';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
@@ -40,8 +38,10 @@ export default function CafeDetailPage() {
   const { data: cafe, isLoading } = useCafeDetail(params.slug);
   const { data: menu = [] } = useCafeMenu(cafe?.cafe_id ?? '');
   const { data: cafeImages } = useCafeImages(cafe?.cafe_id ?? '');
+  const allImages = cafeImages ? [...(cafeImages.main || []), ...(cafeImages.gallery || []), ...(cafeImages.menu || [])] : [];
+  const { data: similarCafes = [] } = useSimilarCafes(cafe?.cafe_id ?? '');
   const { data: reviews = [] } = useCafeReviews(cafe?.cafe_id ?? '');
-  const redeemableItems = menu.flatMap((c: any) => c.items || []).filter((item: any) => item.is_recommended && item.is_available);
+  const redeemableItems = menu.flatMap((c: { items?: { is_recommended?: boolean; is_available?: boolean; item_id: string; image_url?: string; name: string; price: number }[] }) => c.items || []).filter((item: { is_recommended?: boolean; is_available?: boolean; item_id: string; image_url?: string; name: string; price: number }) => item.is_recommended && item.is_available);
 
   const { data: bookmarks = [] } = useBookmarks();
   const addBookmark = useAddBookmark();
@@ -300,7 +300,7 @@ export default function CafeDetailPage() {
             className="min-h-[30vh]"
           >
             {activeTab === 'about' && (
-              <div className="space-y-10">
+              <div className="space-y-10 pb-8">
                 {/* Description */}
                 {cafe.description && (
                   <div>
@@ -314,7 +314,7 @@ export default function CafeDetailPage() {
                   <div>
                     <h3 className="text-white font-playfair text-2xl font-semibold mb-4">Atmosphere</h3>
                     <div className="flex flex-wrap gap-2.5">
-                      {cafe.vibes.map((v) => (
+                      {cafe.vibes.map((v: string) => (
                         <div key={v} className="px-4 py-2 rounded-full border border-white/10 bg-[#111] text-sm text-white/80 transition-all hover:bg-white/5 hover:border-white/20">
                           {v}
                         </div>
@@ -323,28 +323,152 @@ export default function CafeDetailPage() {
                   </div>
                 )}
 
-                {/* Special Offers Grid */}
+                {/* KROWN Recommends */}
+                {redeemableItems.length > 0 && (
+                  <div>
+                    <h3 className="text-white font-playfair text-2xl font-bold mb-4 tracking-wide flex items-center gap-2">
+                       <Crown size={20} className="text-[#D4AF37]" /> KROWN Recommends
+                    </h3>
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                      {redeemableItems.map((item: { item_id: string, image_url?: string, name: string, price: number }) => (
+                        <div key={item.item_id} className="snap-start flex-none w-[140px] md:w-[160px] group cursor-pointer">
+                          <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#111] border border-white/5 mb-3">
+                             <Image 
+                               src={item.image_url ?? "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=80"}
+                               alt={item.name}
+                               fill
+                               className="object-cover group-hover:scale-110 transition-transform duration-500"
+                             />
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </div>
+                          <h4 className="text-white font-medium text-[15px] leading-tight mb-1 truncate">{item.name}</h4>
+                          <p className="text-[#D4AF37] font-semibold text-sm">{formatCurrency(item.price)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+{/* Special Offers Slider */}
                 {cafe.special_offers && cafe.special_offers.length > 0 && (
                   <div>
-                    <h3 className="text-white font-playfair text-2xl font-semibold mb-4">Offers</h3>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      {cafe.special_offers.map((offer) => (
-                        <div key={offer.offer_id} className="group relative overflow-hidden bg-[#111] border border-white/10 hover:border-[#800020]/50 rounded-2xl p-5 transition-all">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-[#800020]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-[#800020]/20 transition-all" />
-                          <div className="relative z-10">
-                            <div className="flex items-start justify-between gap-4 mb-2">
-                              <h4 className="text-white font-semibold text-lg">{offer.title}</h4>
-                              {offer.discount_percent && (
-                                <span className="bg-[#800020] text-white text-xs font-bold px-2 py-1 rounded-md whitespace-nowrap">
-                                  {offer.discount_percent}% OFF
-                                </span>
-                              )}
+                    <h3 className="text-white font-playfair text-2xl font-bold mb-4 tracking-wide">Special Offers</h3>
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                      {cafe.special_offers.map((offer: { offer_id: string, title: string, description?: string, discount_percent?: number }) => (
+                        <div key={offer.offer_id} className="snap-start flex-none w-[300px] md:w-[340px] group relative overflow-hidden rounded-[20px] p-5 transition-all bg-gradient-to-r from-[#D80237] via-[#630F24] to-[#D80237] border border-[#C11E38]/50 shadow-lg">
+                          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-black/0 via-black/10 to-black/40 mix-blend-overlay" />
+                          <div className="relative z-10 flex gap-4 items-center">
+                            <div className="w-12 h-12 flex-shrink-0 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                              <Star size={24} className="text-white" fill="white" />
                             </div>
-                            {offer.description && <p className="text-white/60 text-sm line-clamp-2">{offer.description}</p>}
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h4 className="text-white font-semibold text-base">{offer.title}</h4>
+                                {offer.discount_percent && (
+                                  <span className="bg-black/30 text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap border border-white/10">
+                                    {offer.discount_percent}% OFF
+                                  </span>
+                                )}
+                              </div>
+                              {offer.description && <p className="text-white/70 text-[13px] leading-tight line-clamp-2">{offer.description}</p>}
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Gallery Preview Section */}
+                {allImages.length > 0 && (
+                  <div className="mt-8 mb-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-white font-playfair text-2xl font-semibold">Check the Cafe Out</h3>
+                      <button 
+                        onClick={() => setActiveTab('gallery')}
+                        className="text-[#C11E38] text-sm font-medium hover:underline transition-all"
+                      >
+                        View All
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {/* Left Big Image */}
+                      <div 
+                        className="col-span-1 md:col-span-2 h-[220px] md:h-[400px] relative rounded-2xl overflow-hidden bg-[#1A1A1A] cursor-pointer group"
+                        onClick={() => setActiveTab('gallery')}
+                      >
+                        <Image 
+                          src={allImages[0]} 
+                          alt="Gallery 1" 
+                          fill 
+                          className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+                      </div>
+
+                      {/* Right Images */}
+                      <div className="col-span-1 md:col-span-2 flex flex-col md:grid md:grid-cols-2 gap-3 h-[220px] md:h-[400px]">
+                        {allImages.slice(1, 4).map((img: string, idx: number) => (
+                          <div 
+                            key={idx}
+                            className="relative w-full flex-1 md:h-auto rounded-2xl overflow-hidden bg-[#1A1A1A] cursor-pointer group"
+                            onClick={() => setActiveTab('gallery')}
+                          >
+                            <Image 
+                              src={img} 
+                              alt={`Gallery ${idx + 2}`} 
+                              fill 
+                              className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+{/* Explore Similar Cafes Section */}
+                {similarCafes.length > 0 && (
+                  <div>
+                     <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-white font-playfair text-2xl font-bold tracking-wide">Explore Similar Cafes</h3>
+                     </div>
+                     <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                       {similarCafes.map((simCafe: { cafe_id: string, slug?: string, cover_image?: string, name: string, rating?: number, city?: string, has_krown_pass_benefit?: boolean }) => (
+                         <Link 
+                           href={`/cafes/${simCafe.slug ?? simCafe.cafe_id}`}
+                           key={simCafe.cafe_id}
+                           className="snap-start flex-none w-[200px] md:w-[225px] group block"
+                         >
+                           <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#111] mb-3">
+                             <Image 
+                               src={simCafe.cover_image ?? "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80"}
+                               alt={simCafe.name}
+                               fill
+                               className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                             />
+                             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80" />
+                             
+                             {/* Editors Tag Fallback (If has Krown Pass Benefit) */}
+                             {simCafe.has_krown_pass_benefit && (
+                               <div className="absolute top-2 left-2 bg-[#D4AF37] text-black text-[10px] font-bold px-2 py-0.5 rounded-sm flex items-center gap-1">
+                                 <Crown size={10} /> pass
+                               </div>
+                             )}
+
+                           </div>
+                           <h4 className="text-white font-medium text-base truncate mb-0.5">{simCafe.name}</h4>
+                           <div className="flex items-center gap-1.5 text-xs text-white/50">
+                             <Star size={12} className="text-[#D4AF37]" fill="#D4AF37" />
+                             <span>{simCafe.rating ?? '4.5'}</span>
+                             <span>•</span>
+                             <span>{simCafe.city}</span>
+                           </div>
+                         </Link>
+                       ))}
+                     </div>
                   </div>
                 )}
               </div>
@@ -359,11 +483,11 @@ export default function CafeDetailPage() {
                        <Crown size={20} className="text-[#D4AF37]" /> KROWN Recommends
                     </h3>
                     <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-                      {redeemableItems.map((item: any) => (
+                      {redeemableItems.map((item: { item_id: string, image_url?: string, name: string, price: number }) => (
                         <div key={item.item_id} className="snap-start flex-none w-[140px] md:w-[160px] group cursor-pointer">
                           <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#111] border border-white/5 mb-3">
                              <Image 
-                               src={item.image_url ?? "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=80"} 
+                               src={item.image_url ?? "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=80"}
                                alt={item.name}
                                fill
                                className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -379,11 +503,11 @@ export default function CafeDetailPage() {
                 )}
 
                 {/* Cafe Physical Menu Images */}
-                {cafeImages?.menu && cafeImages.menu.length > 0 && (
+                {cafeImages?.menu && cafeImages.menu.length > 0 ? (
                   <div>
-                    <h3 className="text-white font-playfair text-2xl font-bold mb-4 tracking-wide">Menu</h3>
+                    <h3 className="text-white font-playfair text-2xl font-bold mb-4 tracking-wide">Physical Menu</h3>
                     <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-                      {cafeImages.menu.map((imgUrl, idx) => (
+                      {cafeImages.menu.map((imgUrl: string, idx: number) => (
                         <button 
                           key={idx} 
                           onClick={() => setExpandedMenuImg(imgUrl)}
@@ -394,52 +518,59 @@ export default function CafeDetailPage() {
                             alt={`Menu page ${idx + 1}`} 
                             fill 
                             sizes="240px"
-                            className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                            className="object-cover transition-transform duration-700 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all" />
                         </button>
                       ))}
                     </div>
                   </div>
+                ) : (
+                  <div className="py-12">
+                     <EmptyState icon="Image" title="No menu available" subtitle="This venue hasn't uploaded their menu yet." />
+                  </div>
                 )}
 
-                {/* Fallback Text Menu if needed */}
-                {menu.length === 0 && !cafeImages?.menu?.length ? (
-                  <EmptyState icon="UtensilsCrossed" title="Menu styling..." subtitle="Check back soon for our culinary offerings." />
-                ) : menu.length > 0 && (
-                  <div className="space-y-8 mt-12 pt-8 border-t border-white/5">
-                    <h3 className="text-white/60 font-medium text-sm tracking-widest uppercase text-center mb-6">Detailed Menu</h3>
-                    {menu.map((cat) => (
-                      <div key={cat.category} className="space-y-6">
-                        <div className="flex items-center gap-4">
-                          <h4 className="font-playfair text-xl text-white/90 font-semibold tracking-wide">{cat.category}</h4>
-                          <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
-                        </div>
-                        <div className="grid gap-6 md:grid-cols-2">
-                          {cat.items.map((item) => (
-                            <div key={item.item_id} className="relative group">
-                              <div className="flex justify-between items-baseline gap-4">
-                                <div className="flex-1 bg-[#050505] pr-2 z-10 inline-block overflow-hidden hidden sm:block">
-                                  <span className="text-white/90 font-medium text-[15px]">{item.name}</span>
-                                </div>
-                                <div className="flex-1 sm:hidden">
-                                  <span className="text-white/90 font-medium text-[15px]">{item.name}</span>
-                                </div>
-                                <div className="absolute bottom-1.5 left-0 right-0 border-b-2 border-dotted border-white/10 z-0 hidden sm:block" />
-                                <div className="bg-[#050505] pl-2 z-10 flex-shrink-0">
-                                  <span className="text-[#D4AF37] font-semibold text-[15px] tracking-wide">{formatCurrency(item.price)}</span>
-                                </div>
-                              </div>
-                              {item.description && (
-                                <p className="text-white/40 text-sm mt-1.5 leading-relaxed pr-8 max-w-sm">
-                                  {item.description}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                {/* Explore Similar Cafes Section */}
+                {similarCafes.length > 0 && (
+                  <div>
+                     <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-white font-playfair text-2xl font-bold tracking-wide">Explore Similar Cafes</h3>
+                     </div>
+                     <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                       {similarCafes.map((simCafe: { cafe_id: string, slug?: string, cover_image?: string, name: string, rating?: number, city?: string, has_krown_pass_benefit?: boolean }) => (
+                         <Link 
+                           href={`/cafes/${simCafe.slug ?? simCafe.cafe_id}`}
+                           key={simCafe.cafe_id}
+                           className="snap-start flex-none w-[200px] md:w-[225px] group block"
+                         >
+                           <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#111] mb-3">
+                             <Image 
+                               src={simCafe.cover_image ?? "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80"}
+                               alt={simCafe.name}
+                               fill
+                               className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                             />
+                             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80" />
+                             
+                             {/* Editors Tag Fallback (If has Krown Pass Benefit) */}
+                             {simCafe.has_krown_pass_benefit && (
+                               <div className="absolute top-2 left-2 bg-[#D4AF37] text-black text-[10px] font-bold px-2 py-0.5 rounded-sm flex items-center gap-1">
+                                 <Crown size={10} /> pass
+                               </div>
+                             )}
+
+                           </div>
+                           <h4 className="text-white font-medium text-base truncate mb-0.5">{simCafe.name}</h4>
+                           <div className="flex items-center gap-1.5 text-xs text-white/50">
+                             <Star size={12} className="text-[#D4AF37]" fill="#D4AF37" />
+                             <span>{simCafe.rating ?? '4.5'}</span>
+                             <span>•</span>
+                             <span>{simCafe.city}</span>
+                           </div>
+                         </Link>
+                       ))}
+                     </div>
                   </div>
                 )}
               </div>
@@ -447,12 +578,12 @@ export default function CafeDetailPage() {
 
             {activeTab === 'gallery' && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                {(cafe.images ?? []).length === 0 ? (
+                {(!allImages || allImages.length === 0) ? (
                   <div className="col-span-full py-12">
                     <EmptyState icon="Image" title="No photos yet" subtitle="Photos from this venue will appear here." />
                   </div>
                 ) : (
-                  cafe.images?.map((img, i) => (
+                  allImages.map((img: string, i: number) => (
                     <div key={i} className={`relative ${i === 0 ? 'col-span-2 row-span-2 aspect-auto h-full' : 'aspect-square'} rounded-2xl overflow-hidden group`}>
                       <Image 
                         src={img} 
@@ -469,34 +600,28 @@ export default function CafeDetailPage() {
             )}
 
             {activeTab === 'reviews' && (
-              <div className="space-y-6">
-                {isAuthenticated && (
-                  <Link
-                    href={`/cafes/${params.slug}/review`}
-                    className="group flex items-center justify-between p-5 bg-[#111] border border-white/10 rounded-2xl hover:border-[#800020]/50 hover:bg-gradient-to-r hover:from-[#111] hover:to-[#800020]/10 transition-all duration-300"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center shadow-inner group-hover:bg-[#D4AF37]/20 transition-all">
-                        <Star size={20} className="text-[#D4AF37]" />
-                      </div>
-                      <div>
-                        <h4 className="text-white font-medium text-base mb-1">Share your experience</h4>
-                        <span className="text-white/50 text-sm block tracking-wide">Write a review</span>
-                      </div>
-                    </div>
-                    <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 group-hover:translate-x-1 transition-all">
-                      <ChevronRight size={20} className="text-white/70" />
-                    </div>
-                  </Link>
-                )}
-                
-                <div className="h-px bg-white/10 my-8 w-full block" />
+              <div className="flex-1 w-full pb-24 top-24 pt-6">
+                <div className="flex justify-between items-center mb-6 px-1">
+                  <h2 className="text-[#FFFFFF] font-general-sans text-xl">
+                    Reviews
+                  </h2>
+                  {isAuthenticated && (
+                    <Link
+                      href={`/cafes/${params.slug}/review`}
+                      className="flex items-center"
+                    >
+                      <MessageSquare size={16} className="text-[#C11E38] mr-1.5" />
+                      <span className="text-[#C11E38] font-general-sans text-[14px]">
+                        Add a Review
+                      </span>
+                    </Link>
+                  )}
+                </div>
 
                 {reviews.length === 0 ? (
                   <EmptyState icon="Star" title="No reviews yet" subtitle="Be the first to share your thoughts!" />
                 ) : (
-                  <div className="space-y-4">
-                    <h3 className="text-white font-playfair text-2xl font-semibold mb-6">Guest Reviews</h3>
+                  <div className="flex flex-col">
                     {reviews.map((review) => (
                       <ReviewCard key={review.review_id} review={review} />
                     ))}
