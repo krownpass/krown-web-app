@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/queries/queryKeys';
 import { useUserLocation } from '@/hooks/useUserLocation';
+import { EventBookingSuccess } from '@/components/animations/EventBookingSuccess';
 
 export default function EventDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -35,6 +36,12 @@ export default function EventDetailPage() {
   const [ticketCount, setTicketCount] = useState(1);
   const [showAllThingsToKnow, setShowAllThingsToKnow] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [showBookingAnimation, setShowBookingAnimation] = useState(false);
+
+  const handleBookingAnimationComplete = useCallback(() => {
+    setShowBookingAnimation(false);
+    router.push('/events/my-tickets');
+  }, [router]);
 
   const { data: event, isLoading } = useEventDetail(params.slug);
   const { data: userRegistration } = useUserRegistration(event?.event_id);
@@ -141,8 +148,8 @@ export default function EventDetailPage() {
                 await queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
                 await queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets() });
                 await queryClient.invalidateQueries({ queryKey: ['event-registration', event.event_id] });
-                toast.success('Registration successful!');
-                router.push('/events/my-tickets');
+                setPaymentLoading(false);
+                setShowBookingAnimation(true);
               } catch {
                 toast.error('Payment verification failed.');
                 await eventService.cancelRegistration(event.event_id).catch(() => {});
@@ -176,8 +183,7 @@ export default function EventDetailPage() {
           await queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
           await queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets() });
           await queryClient.invalidateQueries({ queryKey: ['event-registration', event.event_id] });
-          toast.success('You\'re registered!');
-          router.push('/events/my-tickets');
+          setShowBookingAnimation(true);
         } catch (err: any) {
           const msg = err?.response?.data?.message ?? 'Registration failed. Please try again.';
           toast.error(msg);
@@ -257,6 +263,8 @@ export default function EventDetailPage() {
   const isMembersOnlyType = event.event_type === 'KROWN_EXCLUSIVE' || event.event_type === 'MEMBER_ONLY';
 
   return (
+    <>
+    <EventBookingSuccess show={showBookingAnimation} onComplete={handleBookingAnimationComplete} />
     <div className="min-h-screen bg-[#0A0A0A] pb-36">
       {/* ── Hero ── */}
       <div className="relative h-[420px] md:h-[520px] overflow-hidden">
@@ -730,5 +738,6 @@ export default function EventDetailPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

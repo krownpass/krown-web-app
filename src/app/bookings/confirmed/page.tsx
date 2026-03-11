@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,20 +9,32 @@ import { useBookingDetail } from '@/queries/useBookings';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
+import { ReservationSuccess } from '@/components/animations/ReservationSuccess';
 
 export default function BookingConfirmedPage() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('id') ?? '';
   const { data: booking, isLoading } = useBookingDetail(bookingId);
-  const [showConfetti, setShowConfetti] = useState(true);
+  const [showAnimation, setShowAnimation] = useState(true);
+  const [showContent, setShowContent] = useState(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => setShowConfetti(false), 3000);
-    return () => clearTimeout(t);
+  const handleAnimationComplete = useCallback(() => {
+    setShowAnimation(false);
+    setShowContent(true);
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8">
+    <>
+      {/* Celebration animation — plays first, then fades out */}
+      <ReservationSuccess show={showAnimation} onComplete={handleAnimationComplete} duration={3200} />
+
+      {/* Page content — appears after animation completes */}
+      <motion.div
+        className="min-h-screen flex items-center justify-center px-4 py-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showContent ? 1 : 0 }}
+        transition={{ duration: 0.5 }}
+      >
       <div className="max-w-sm w-full">
         {/* Checkmark animation */}
         <div className="flex justify-center mb-6">
@@ -113,6 +125,7 @@ export default function BookingConfirmedPage() {
           </Link>
         </motion.div>
       </div>
-    </div>
+    </motion.div>
+    </>
   );
 }

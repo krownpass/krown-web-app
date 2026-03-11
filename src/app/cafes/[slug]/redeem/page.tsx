@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import Image from 'next/image';
@@ -11,6 +11,7 @@ import { rewardsService } from '@/services/rewards.service';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 import { KrownMembershipModal } from '@/components/modals/KrownMembershipModal';
+import { DrinkRedemptionSuccess } from '@/components/animations/DrinkRedemptionSuccess';
 
 export default function RedeemDrinkPage() {
   const params = useParams<{ slug: string }>();
@@ -29,9 +30,16 @@ export default function RedeemDrinkPage() {
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [redeemSuccessData, setRedeemSuccessData] = useState<any | null>(null);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [showSuccessContent, setShowSuccessContent] = useState(false);
   const [redeemError, setRedeemError] = useState<string | null>(null);
   const [showKrownModal, setShowKrownModal] = useState(false);
   const [plansLoaded, setPlansLoaded] = useState(false);
+
+  const handleAnimationComplete = useCallback(() => {
+    setShowAnimation(false);
+    setShowSuccessContent(true);
+  }, []);
 
   useEffect(() => {
     // Left intentionally empty as we fetch on Continue
@@ -43,9 +51,8 @@ export default function RedeemDrinkPage() {
 
     if (status === 'success') {
       toast.success('Membership Activated! You can now redeem drinks.');
-      refetchProfile(); // Update local profile state automatically
+      refetchProfile();
       
-      // Clean up the URL elegantly after showing the toast
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     } else if (status === 'failed' || status === 'error' || status === 'cancelled') {
@@ -72,6 +79,7 @@ export default function RedeemDrinkPage() {
         userSubscriptionId: planToUse.id,
       });
       setRedeemSuccessData(res);
+      setShowAnimation(true);
     } catch (err: any) {
       setRedeemError(err?.response?.data?.message || 'Failed to redeem drink');
     } finally {
@@ -86,7 +94,6 @@ export default function RedeemDrinkPage() {
       setShowKrownModal(true);
       return;
     }
-    // Proceed to load plans
     setLoadingPlans(true);
     rewardsService.getRedemptionOptions()
       .then((res: any) => {
@@ -106,7 +113,7 @@ export default function RedeemDrinkPage() {
     performRedemption(selectedPlan);
   };
 
-    if (redeemError) {
+  if (redeemError) {
     return (
       <ProtectedRoute>
         <div className="max-w-2xl mx-auto px-4 py-16 min-h-screen flex flex-col items-center justify-center text-center">
@@ -154,61 +161,70 @@ export default function RedeemDrinkPage() {
   if (redeemSuccessData) {
     return (
       <ProtectedRoute>
-        <div className="max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col items-center justify-center text-center">
-          <style>{`
-            @keyframes scaleIn {
-              0% { transform: scale(0); opacity: 0; }
-              60% { transform: scale(1.1); opacity: 1; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-            .animate-scale-in {
-              animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            }
-          `}</style>
+        <>
+          <DrinkRedemptionSuccess
+            show={showAnimation}
+            onComplete={handleAnimationComplete}
+          />
 
-          <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 animate-scale-in">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.5)]">
-              <Check size={32} className="text-white" strokeWidth={3} />
+          {showSuccessContent && (
+            <div className="max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col items-center justify-center text-center">
+              <style>{`
+                @keyframes scaleIn {
+                  0% { transform: scale(0); opacity: 0; }
+                  60% { transform: scale(1.1); opacity: 1; }
+                  100% { transform: scale(1); opacity: 1; }
+                }
+                .animate-scale-in {
+                  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+              `}</style>
+
+              <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 animate-scale-in">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.5)]">
+                  <Check size={32} className="text-white" strokeWidth={3} />
+                </div>
+              </div>
+              
+              <h1 className="text-3xl font-playfair font-bold text-white mb-2 animate-scale-in" style={{ animationDelay: '0.1s', opacity: 0 }}>
+                Drink Redeemed!
+              </h1>
+              <p className="text-green-400 mb-8 animate-scale-in" style={{ animationDelay: '0.2s', opacity: 0 }}>
+                Success. Show this code to the staff.
+              </p>
+              
+              <div className="bg-[#1A1A1A] border border-[#333333] p-8 rounded-2xl w-full max-w-sm mb-8 text-center flex flex-col items-center animate-scale-in" style={{ animationDelay: '0.3s', opacity: 0 }}>
+                <span className="text-[13px] text-[#9CA3AF] mb-3 uppercase tracking-wider">Redemption Code</span>
+                <div className="text-5xl font-bold text-white tracking-[0.2em] mb-4 font-poppins">
+                  {redeemSuccessData.redeem_code 
+                    ? `${redeemSuccessData.redeem_code.slice(0, 4)} ${redeemSuccessData.redeem_code.slice(4)}`
+                    : (redeemSuccessData.code || '— — —')}
+                </div>
+                <div className="text-md text-white font-medium mb-1">{selectedItem?.name}</div>
+                <div className="text-sm text-[#9CA3AF] bg-[#2A2A2A] px-3 py-1 rounded-full mt-2">{cafe?.name}</div>
+              </div>
+
+              <div className="text-center mb-8 animate-scale-in" style={{ animationDelay: '0.4s', opacity: 0 }}>
+                <p className="text-[#9CA3AF] text-sm">Valid for the next 10 minutes</p>
+              </div>
+
+              <button 
+                onClick={() => router.push(`/cafes/${params.slug}`)}
+                className="w-full max-w-sm bg-[#800020] text-white py-4 rounded-xl font-semibold hover:bg-[#A00028] transition-all animate-scale-in"
+                style={{ animationDelay: '0.5s', opacity: 0 }}
+              >
+                Done
+              </button>
             </div>
-          </div>
-          
-          <h1 className="text-3xl font-playfair font-bold text-white mb-2 animate-scale-in" style={{ animationDelay: '0.1s', opacity: 0 }}>
-            Drink Redeemed!
-          </h1>
-          <p className="text-green-400 mb-8 animate-scale-in" style={{ animationDelay: '0.2s', opacity: 0 }}>
-            Success. Show this code to the staff.
-          </p>
-          
-          <div className="bg-[#1A1A1A] border border-[#333333] p-8 rounded-2xl w-full max-w-sm mb-8 text-center flex flex-col items-center animate-scale-in" style={{ animationDelay: '0.3s', opacity: 0 }}>
-             <span className="text-[13px] text-[#9CA3AF] mb-3 uppercase tracking-wider">Redemption Code</span>
-             <div className="text-5xl font-bold text-white tracking-[0.2em] mb-4 font-poppins">
-                 {redeemSuccessData.redeem_code 
-                 ? `${redeemSuccessData.redeem_code.slice(0, 4)} ${redeemSuccessData.redeem_code.slice(4)}`
-                 : (redeemSuccessData.code || '— — —')}
-             </div>
-             <div className="text-md text-white font-medium mb-1">{selectedItem?.name}</div>
-             <div className="text-sm text-[#9CA3AF] bg-[#2A2A2A] px-3 py-1 rounded-full mt-2">{cafe?.name}</div>
-          </div>
-
-          <div className="text-center mb-8 animate-scale-in" style={{ animationDelay: '0.4s', opacity: 0 }}>
-            <p className="text-[#9CA3AF] text-sm">Valid for the next 10 minutes</p>
-          </div>
-
-          <button 
-            onClick={() => router.push(`/cafes/${params.slug}`)}
-            className="w-full max-w-sm bg-[#800020] text-white py-4 rounded-xl font-semibold hover:bg-[#A00028] transition-all animate-scale-in"
-            style={{ animationDelay: '0.5s', opacity: 0 }}
-          >
-            Done
-          </button>
-        </div>
+          )}
+        </>
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute>
-      <div className={`max-w-2xl mx-auto px-4 md:px-6 py-6 min-h-screen \${selectedItem ? 'pb-32' : ''}`}>
+      <div className={`max-w-2xl mx-auto px-4 md:px-6 py-6 min-h-screen ${selectedItem ? 'pb-32' : ''}`}>
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => {
             if (plansLoaded) {
