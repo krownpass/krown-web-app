@@ -171,6 +171,14 @@ export const cafeService = {
     return (theme?.cafes ?? []).map(mapCafe);
   },
 
+  // All cafes (no pagination, used by swipe deck)
+  async getAllCafes(): Promise<Cafe[]> {
+    const res = await api.get("/cafes");
+    const data = res.data.data ?? res.data;
+    const raw: any[] = Array.isArray(data) ? data : data.cafes ?? [];
+    return raw.map(mapCafe);
+  },
+
   // Featured cafes: use GET /cafes (server has no /cafes/offers endpoint)
   async getFeaturedCafes(): Promise<Cafe[]> {
     const res = await api.get("/cafes");

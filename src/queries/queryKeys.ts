@@ -16,6 +16,7 @@ export const queryKeys = {
     theme: (slug: string) => [...queryKeys.cafes.all, "theme", slug] as const,
     featured: () => [...queryKeys.cafes.all, "featured"] as const,
     nearby: (lat: number, lng: number) => [...queryKeys.cafes.all, "nearby", lat, lng] as const,
+    swipe: () => [...queryKeys.cafes.all, "swipe"] as const,
   },
   events: {
     all: ["events"] as const,

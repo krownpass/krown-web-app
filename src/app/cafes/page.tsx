@@ -7,13 +7,14 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { useCafes } from '@/queries/useCafes';
+import { useCafes, useSwipeCafes } from '@/queries/useCafes';
 import { useAddBookmark, useRemoveBookmark, useBookmarks } from '@/queries/useUser';
 import { useAuthStore } from '@/stores/authStore';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 import type { CafeFilters } from '@/types/cafe';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { CafeSwipeStack } from '@/components/cafe/CafeSwipeStack';
 
 const vibeFilters = ['Fun & Wild', 'Cozy & Comfy', 'Date Night', 'Work & Study', 'Brunch Gang'];
 
@@ -21,8 +22,10 @@ function CafesContent() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const { isIntersecting } = useIntersectionObserver(loadMoreRef, { threshold: 0.1 });
   const { isAuthenticated } = useAuthStore();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlSearchParams = searchParams.get('search') || '';
+  const { cafes: swipeCafes } = useSwipeCafes();
 
   const [search, setSearch] = useState(urlSearchParams);
   const [selectedVibe, setSelectedVibe] = useState('');
@@ -169,6 +172,64 @@ function CafesContent() {
           </div>
         </div>
       </div>
+
+      {/* Adventure — Swipe Deck */}
+      {swipeCafes.length >= 3 && (
+        <div className="relative mb-16 overflow-hidden">
+          {/* Background ambiance */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[120px] opacity-[0.07]"
+              style={{ background: 'radial-gradient(circle, #951334, transparent)' }}
+            />
+          </div>
+
+          <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 relative">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="py-10 md:py-14"
+            >
+              {/* Section header */}
+              <div className="text-center mb-10">
+                <motion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="font-playfair text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/60"
+                >
+                  Up For an Adventure?
+                </motion.h2>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-4 flex items-center justify-center gap-3"
+                >
+                  <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#800020]/50" />
+                  <p className="text-lg md:text-xl text-white/50">
+                    Swipe{' '}
+                    <span className="font-playfair text-white/80 italic">Left</span>{' '}
+                    till you find your{' '}
+                    <span className="font-playfair text-white/80 italic">Match</span>
+                  </p>
+                  <div className="h-px w-8 bg-gradient-to-l from-transparent to-[#800020]/50" />
+                </motion.div>
+              </div>
+
+              <CafeSwipeStack
+                cafes={swipeCafes}
+                onCardPress={(cafe) =>
+                  router.push(`/cafes/${cafe.slug ?? cafe.cafe_id}`)
+                }
+              />
+            </motion.div>
+          </div>
+
+          {/* Bottom divider */}
+          <div className="max-w-[600px] mx-auto h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+        </div>
+      )}
 
       <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8">
         {/* Grid */}

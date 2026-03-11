@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import {
   useQuery,
   useInfiniteQuery,
@@ -63,4 +64,41 @@ export function useCafesByTheme(themeSlug: string) {
     gcTime: GC_TIME,
     ...retryConfig,
   });
+}
+
+/** Fetches all cafes and shuffles them for the swipe deck (mirrors krown-app useSwipeCafes). */
+export function useSwipeCafes() {
+  const { data: allCafes = [], isLoading } = useQuery<Cafe[]>({
+    queryKey: queryKeys.cafes.swipe(),
+    queryFn: () => cafeService.getAllCafes(),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    ...retryConfig,
+  });
+
+  const [shuffled, setShuffled] = useState<Cafe[]>([]);
+
+  useEffect(() => {
+    if (allCafes.length > 0) {
+      const copy = [...allCafes];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      setShuffled(copy);
+    }
+  }, [allCafes]);
+
+  const refresh = useCallback(() => {
+    if (allCafes.length > 0) {
+      const copy = [...allCafes];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      setShuffled(copy);
+    }
+  }, [allCafes]);
+
+  return { cafes: shuffled, isLoading, refresh };
 }
