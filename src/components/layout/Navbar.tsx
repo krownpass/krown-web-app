@@ -9,6 +9,7 @@ import { Search, Bell, ChevronDown, LogOut, User, Bookmark, BookOpen } from 'luc
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useUnreadCount } from '@/queries/useNotifications';
+import { useProfile } from '@/queries/useUser';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Ticket } from 'lucide-react';
@@ -27,6 +28,7 @@ export function Navbar() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
+  const { data: profile } = useProfile();
   const { data: unreadCount } = useUnreadCount();
 
   useEffect(() => {
@@ -43,28 +45,26 @@ export function Navbar() {
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed top-6 left-0 right-0 z-50 hidden md:flex justify-center pointer-events-none px-6"
+      className={cn(
+        "fixed top-0 inset-x-0 z-50 hidden md:flex flex-col justify-center transition-all duration-500",
+        scrolled 
+          ? "bg-[#050505]/95 backdrop-blur-3xl shadow-2xl py-3 border-b border-white/[0.05]"
+          : "bg-gradient-to-b from-[#000000]/80 to-transparent py-5"
+      )}
     >
-      <div 
-        className={cn(
-          "pointer-events-auto flex items-center justify-between w-full max-w-5xl px-3 py-2.5 rounded-full transition-all duration-500 shadow-2xl",
-          scrolled 
-            ? "bg-[#0B0B0B]/80 backdrop-blur-2xl border border-white/10 shadow-[#000000]/50" 
-            : "bg-[#0A0A0A]/40 backdrop-blur-lg border border-white/[0.05]"
-        )}
-      >
+      <div className="flex items-center justify-between w-full max-w-[1400px] mx-auto px-6 lg:px-12">
         {/* Left: Logo */}
-        <Link href="/" className="flex items-center gap-3 pl-3 pr-2 group">
-          <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-300">
+        <Link href="/" className="flex items-center gap-4 group">
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-500 shadow-[0_0_20px_rgba(212,175,55,0.1)]">
             <Image src="/krown-icon.png" alt="Krown" fill className="object-cover" />
           </div>
-          <span className="font-playfair text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#D4AF37] to-[#FFF3B0] tracking-widest hidden lg:block">
+          <span className="font-playfair text-2xl font-bold tracking-[0.2em] text-white">
             KROWN
           </span>
         </Link>
 
         {/* Center: Nav links */}
-        <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/[0.02] p-1.5 rounded-full border border-white/[0.05]">
+        <nav className="flex items-center gap-10">
           {NAV_LINKS.map((link) => {
             const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
             return (
@@ -72,25 +72,25 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'relative px-5 py-2 rounded-full text-sm font-medium transition-colors duration-300',
-                  isActive ? 'text-white' : 'text-white/50 hover:text-white'
+                  'relative py-2 text-sm uppercase tracking-[0.1em] font-medium transition-colors duration-300',
+                  isActive ? 'text-[#D4AF37]' : 'text-white/60 hover:text-white'
                 )}
               >
+                {link.label}
                 {isActive && (
                   <motion.div
-                    layoutId="navbar-pill"
-                    className="absolute inset-0 bg-white/10 rounded-full -z-10 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                    layoutId="header-underline"
+                    className="absolute left-0 right-0 -bottom-1 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
-                {link.label}
               </Link>
             );
           })}
         </nav>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-2 pr-1">
+        <div className="flex items-center gap-4">
           <Link
             href={pathname === '/cafes' ? '/search?type=cafes' : pathname === '/events' ? '/search?type=events' : '/search'}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 border border-white/5 text-white/70 hover:text-white hover:bg-white/10 hover:border-white/10 transition-all duration-300"
@@ -118,7 +118,7 @@ export function Navbar() {
                 onClick={() => setProfileOpen((prev) => !prev)}
                 className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-white/10 hover:border-[#D4AF37]/50 transition-colors duration-300 p-0 overflow-hidden"
               >
-                <Avatar src={user.profile_image} name={user.name} size="sm" className="w-full h-full" />
+                <Avatar src={profile?.profile_image || user.profile_image} name={profile?.name || user.name} size="sm" className="w-full h-full" />
               </button>
 
               <AnimatePresence>
@@ -136,8 +136,8 @@ export function Navbar() {
                       className="absolute right-0 top-[calc(100%+12px)] w-56 bg-[#121212]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] z-20 py-2 overflow-hidden"
                     >
                       <div className="px-5 py-4 border-b border-white/[0.08] bg-white/[0.02]">
-                        <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-                        <p className="text-xs text-white/40 mt-1 truncate">{user.phone}</p>
+                        <p className="text-sm font-semibold text-white truncate">{profile?.name || user.name}</p>
+                        <p className="text-xs text-white/40 mt-1 truncate">{profile?.phone || user.phone}</p>
                       </div>
                       <div className="py-2">
                         {[

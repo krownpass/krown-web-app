@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useRef, useEffect } from 'react';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { motion } from 'framer-motion';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { CafeCard } from '@/components/cafe/CafeCard';
@@ -17,6 +18,8 @@ import { useSearchParams } from 'next/navigation';
 const vibeFilters = ['Fun & Wild', 'Cozy & Comfy', 'Date Night', 'Work & Study', 'Brunch Gang'];
 
 function CafesContent() {
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const { isIntersecting } = useIntersectionObserver(loadMoreRef, { threshold: 0.1 });
   const { isAuthenticated } = useAuthStore();
   const searchParams = useSearchParams();
   const urlSearchParams = searchParams.get('search') || '';
@@ -36,6 +39,12 @@ function CafesContent() {
   };
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useCafes(filters);
+
+  useEffect(() => {
+    if (isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
   const { data: userBookmarks = [] } = useBookmarks();
   const addBookmark = useAddBookmark();
   const removeBookmark = useRemoveBookmark();

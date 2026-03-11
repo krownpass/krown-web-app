@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -94,13 +95,44 @@ export function useUpdateProfile() {
 
 export function useAddBookmark() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, string>({
+  return useMutation<void, Error, string, { previousBookmarks: Cafe[] | undefined }>({
     mutationFn: (cafeId: string) => userService.addFavourite(cafeId),
+    onMutate: async (cafeId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.bookmarks });
+      await queryClient.cancelQueries({ queryKey: queryKeys.cafes.all });
+      
+      const previousBookmarks = queryClient.getQueryData<Cafe[]>(queryKeys.user.bookmarks);
+      
+      // Optimistically update cafe lists
+      queryClient.setQueriesData({ queryKey: queryKeys.cafes.all }, (oldData: any) => {
+        if (!oldData) return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              cafes: page.cafes.map((c: any) => c.cafe_id === cafeId ? { ...c, is_bookmarked: true } : c)
+            }))
+          };
+        }
+        if (Array.isArray(oldData)) {
+          return oldData.map((c: any) => c.cafe_id === cafeId ? { ...c, is_bookmarked: true } : c);
+        }
+        return oldData;
+      });
+
+      return { previousBookmarks };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.bookmarks });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cafes.all });
       toast.success('Cafe saved to bookmarks!');
     },
-    onError: () => {
+    onError: (err, cafeId, context) => {
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(queryKeys.user.bookmarks, context.previousBookmarks);
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.cafes.all });
       toast.error('Failed to bookmark cafe.');
     },
   });
@@ -108,13 +140,51 @@ export function useAddBookmark() {
 
 export function useRemoveBookmark() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, string>({
+  return useMutation<void, Error, string, { previousBookmarks: Cafe[] | undefined }>({
     mutationFn: (cafeId: string) => userService.removeFavourite(cafeId),
+    onMutate: async (cafeId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.bookmarks });
+      await queryClient.cancelQueries({ queryKey: queryKeys.cafes.all });
+      
+      const previousBookmarks = queryClient.getQueryData<Cafe[]>(queryKeys.user.bookmarks);
+      
+      if (previousBookmarks) {
+        queryClient.setQueryData<Cafe[]>(
+          queryKeys.user.bookmarks,
+          previousBookmarks.filter(c => c.cafe_id !== cafeId)
+        );
+      }
+
+      // Optimistically update cafe lists
+      queryClient.setQueriesData({ queryKey: queryKeys.cafes.all }, (oldData: any) => {
+        if (!oldData) return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              cafes: page.cafes.map((c: any) => c.cafe_id === cafeId ? { ...c, is_bookmarked: false } : c)
+            }))
+          };
+        }
+        if (Array.isArray(oldData)) {
+          return oldData.map((c: any) => c.cafe_id === cafeId ? { ...c, is_bookmarked: false } : c);
+        }
+        return oldData;
+      });
+
+      return { previousBookmarks };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.bookmarks });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cafes.all });
       toast.success('Removed from bookmarks.');
     },
-    onError: () => {
+    onError: (err, cafeId, context) => {
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(queryKeys.user.bookmarks, context.previousBookmarks);
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.cafes.all });
       toast.error('Failed to remove bookmark.');
     },
   });
@@ -134,13 +204,44 @@ export function useEventBookmarks() {
 
 export function useAddEventBookmark() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, string>({
+  return useMutation<void, Error, string, { previousBookmarks: any[] | undefined }>({
     mutationFn: (eventId: string) => userService.addEventFavourite(eventId),
+    onMutate: async (eventId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.eventBookmarks });
+      await queryClient.cancelQueries({ queryKey: queryKeys.events.all });
+      
+      const previousBookmarks = queryClient.getQueryData<any[]>(queryKeys.user.eventBookmarks);
+      
+      // Optimistically update event lists
+      queryClient.setQueriesData({ queryKey: queryKeys.events.all }, (oldData: any) => {
+        if (!oldData) return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              events: page.events.map((e: any) => e.event_id === eventId ? { ...e, is_bookmarked: true } : e)
+            }))
+          };
+        }
+        if (Array.isArray(oldData)) {
+          return oldData.map((e: any) => e.event_id === eventId ? { ...e, is_bookmarked: true } : e);
+        }
+        return oldData;
+      });
+
+      return { previousBookmarks };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.eventBookmarks });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       toast.success('Event saved to bookmarks!');
     },
-    onError: () => {
+    onError: (err, eventId, context) => {
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(queryKeys.user.eventBookmarks, context.previousBookmarks);
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       toast.error('Failed to bookmark event.');
     },
   });
@@ -148,13 +249,51 @@ export function useAddEventBookmark() {
 
 export function useRemoveEventBookmark() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, string>({
+  return useMutation<void, Error, string, { previousBookmarks: any[] | undefined }>({
     mutationFn: (eventId: string) => userService.removeEventFavourite(eventId),
+    onMutate: async (eventId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.eventBookmarks });
+      await queryClient.cancelQueries({ queryKey: queryKeys.events.all });
+      
+      const previousBookmarks = queryClient.getQueryData<any[]>(queryKeys.user.eventBookmarks);
+      
+      if (previousBookmarks) {
+        queryClient.setQueryData<any[]>(
+          queryKeys.user.eventBookmarks,
+          previousBookmarks.filter(e => e.event_id !== eventId)
+        );
+      }
+
+      // Optimistically update event lists
+      queryClient.setQueriesData({ queryKey: queryKeys.events.all }, (oldData: any) => {
+        if (!oldData) return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              events: page.events.map((e: any) => e.event_id === eventId ? { ...e, is_bookmarked: false } : e)
+            }))
+          };
+        }
+        if (Array.isArray(oldData)) {
+          return oldData.map((e: any) => e.event_id === eventId ? { ...e, is_bookmarked: false } : e);
+        }
+        return oldData;
+      });
+
+      return { previousBookmarks };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.eventBookmarks });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       toast.success('Removed from bookmarks.');
     },
-    onError: () => {
+    onError: (err, eventId, context) => {
+      if (context?.previousBookmarks) {
+        queryClient.setQueryData(queryKeys.user.eventBookmarks, context.previousBookmarks);
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       toast.error('Failed to remove bookmark.');
     },
   });

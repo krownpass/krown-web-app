@@ -39,22 +39,62 @@ export function useUnreadCount() {
 
 export function useMarkAsRead() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, string>({
+  return useMutation<void, Error, string, { prevNotifs: Notification[] | undefined, prevCount: number | undefined }>({
     mutationFn: (notificationId: string) => notificationService.markAsRead(notificationId),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.notifications });
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.unreadCount });
+      
+      const prevNotifs = queryClient.getQueryData<Notification[]>(queryKeys.user.notifications);
+      const prevCount = queryClient.getQueryData<number>(queryKeys.user.unreadCount);
+
+      queryClient.setQueryData<Notification[]>(queryKeys.user.notifications, (old) => {
+        if (!old) return old;
+        return old.map(n => n.id === id ? { ...n, is_read: true } : n);
+      });
+      queryClient.setQueryData<number>(queryKeys.user.unreadCount, (old) => {
+        return old ? Math.max(0, old - 1) : 0;
+      });
+
+      return { prevNotifs, prevCount };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.notifications });
       queryClient.invalidateQueries({ queryKey: queryKeys.user.unreadCount });
+    },
+    onError: (err, id, context) => {
+      if (context?.prevNotifs) queryClient.setQueryData(queryKeys.user.notifications, context.prevNotifs);
+      if (context?.prevCount !== undefined) queryClient.setQueryData(queryKeys.user.unreadCount, context.prevCount);
     },
   });
 }
 
 export function useMarkAllAsRead() {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, void>({
+  return useMutation<void, Error, void, { prevNotifs: Notification[] | undefined, prevCount: number | undefined }>({
     mutationFn: () => notificationService.markAllAsRead(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.notifications });
+      await queryClient.cancelQueries({ queryKey: queryKeys.user.unreadCount });
+      
+      const prevNotifs = queryClient.getQueryData<Notification[]>(queryKeys.user.notifications);
+      const prevCount = queryClient.getQueryData<number>(queryKeys.user.unreadCount);
+
+      queryClient.setQueryData<Notification[]>(queryKeys.user.notifications, (old) => {
+        if (!old) return old;
+        return old.map(n => ({ ...n, is_read: true }));
+      });
+      queryClient.setQueryData<number>(queryKeys.user.unreadCount, 0);
+
+      return { prevNotifs, prevCount };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.user.notifications });
       queryClient.setQueryData(queryKeys.user.unreadCount, 0);
+    },
+    onError: (err, _, context) => {
+      if (context?.prevNotifs) queryClient.setQueryData(queryKeys.user.notifications, context.prevNotifs);
+      if (context?.prevCount !== undefined) queryClient.setQueryData(queryKeys.user.unreadCount, context.prevCount);
     },
   });
 }

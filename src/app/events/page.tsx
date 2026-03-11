@@ -1,7 +1,8 @@
 
 'use client';
 
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, Suspense, useRef, useEffect } from 'react';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ChevronRight } from 'lucide-react';
 import { EventCard } from '@/components/event/EventCard';
@@ -15,6 +16,8 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
 function EventsContent() {
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const { isIntersecting } = useIntersectionObserver(loadMoreRef, { threshold: 0.1 });
   const searchParams = useSearchParams();
   const urlSearchParams = searchParams.get('search') || '';
   const [search, setSearch] = useState(urlSearchParams);
@@ -26,6 +29,12 @@ function EventsContent() {
 
   const { data: featuredEvents = [] } = useFeaturedEvents();
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useEvents(apiFilters);
+
+  useEffect(() => {
+    if (isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
   
   const rawEvents = data?.pages.flatMap((p) => p.events) ?? [];
   const events = useMemo(() => {
@@ -192,15 +201,13 @@ function EventsContent() {
               </AnimatePresence>
 
               {hasNextPage && (
-                <div className="pt-12 flex justify-center">
-                  <button
-                    onClick={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                    className="group relative px-8 py-3.5 bg-transparent border border-[#800020]/50 hover:border-[#800020] text-white hover:text-white overflow-hidden rounded-full font-bold text-sm uppercase tracking-wider transition-all duration-300 disabled:opacity-50 inline-flex items-center gap-2 shadow-[0_0_20px_rgba(128,0,32,0.1)] hover:shadow-[0_0_30px_rgba(128,0,32,0.3)]"
-                  >
-                    <span className="relative z-10">{isFetchingNextPage ? 'Loading...' : 'Load More'}</span>
-                    <div className="absolute inset-0 bg-[#800020]/10 hover:bg-[#800020]/20 transition-colors duration-300" />
-                  </button>
+                <div ref={loadMoreRef} className="pt-12 flex justify-center h-10 w-full mb-10">
+                  {isFetchingNextPage ? (
+                    <div className="flex items-center gap-3 text-[#D4AF37]">
+                      <div className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      <span className="font-medium text-sm tracking-widest uppercase">Loading More...</span>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

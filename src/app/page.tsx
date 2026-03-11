@@ -112,7 +112,7 @@ export default function HomePage() {
             </h1>
             <p className="text-lg md:text-xl text-white/50 font-light max-w-2xl mx-auto mb-10">
               Discover unparalleled café experiences, exclusive events, and premium rewards. 
-              The city\'s best, curated just for you.
+              The city's best, curated just for you.
             </p>
 
             {/* Premium Search Bar */}
@@ -185,7 +185,7 @@ export default function HomePage() {
                 <span className="text-xl font-medium tracking-[0.2em] text-white/70 uppercase">Krown Pass</span>
               </div>
               <h2 className="font-playfair text-4xl md:text-6xl font-bold leading-tight mb-6">
-                The key to the city\'s <br/>
+                The key to the city's <br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#800020] to-[#ff3355]">hidden gems.</span>
               </h2>
               <p className="text-lg text-white/60 mb-10 leading-relaxed font-light">
