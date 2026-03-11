@@ -33,11 +33,43 @@ function mapCafe(raw: any): Cafe {
 export const cafeService = {
   // GET /api/cafes — server returns all cafes (no server-side pagination)
   async getCafes(filters?: CafeFilters): Promise<{ cafes: Cafe[]; total: number }> {
-    const res = await api.get("/cafes", { params: filters });
+    const res = await api.get("/cafes");
     const data = res.data.data ?? res.data;
     const raw: any[] = Array.isArray(data) ? data : data.cafes ?? [];
-    const cafes = raw.map(mapCafe);
-    return { cafes, total: cafes.length };
+    let cafes = raw.map(mapCafe);
+
+    if (filters) {
+      if (filters.search) {
+        const lower = filters.search.toLowerCase();
+        cafes = cafes.filter((c) =>
+          (c.name && c.name.toLowerCase().includes(lower)) ||
+          (c.address && c.address.toLowerCase().includes(lower)) ||
+          (c.vibes && c.vibes.some((v) => v.toLowerCase().includes(lower)))
+        );
+      }
+      if (filters.vibe) {
+        const targetVibe = filters.vibe.toLowerCase();
+        cafes = cafes.filter((c) => c.vibes && c.vibes.some(v => v.toLowerCase().includes(targetVibe)));
+      }
+      if (filters.open_now !== undefined) {
+        cafes = cafes.filter((c) => c.is_open === filters.open_now);
+      }
+      if (filters.sort_by) {
+        if (filters.sort_by === 'rating') {
+          cafes.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else if (filters.sort_by === 'newest') {
+          cafes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        }
+      }
+    }
+
+    // Handled client-side pagination since we fetched all
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 10;
+    const startIndex = (page - 1) * limit;
+    const paginatedCafes = cafes.slice(startIndex, startIndex + limit);
+
+    return { cafes: paginatedCafes, total: cafes.length };
   },
 
   // GET /api/cafes/:cafeId — server only supports UUID lookup

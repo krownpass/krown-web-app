@@ -92,6 +92,15 @@ export const eventService = {
     await api.delete(`/events/${eventId}/registration`);
   },
 
+  async getEventGallery(eventId: string): Promise<string[]> {
+    const res = await api.get(`/events/${eventId}/images`);
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (data?.data?.images && Array.isArray(data.data.images)) return data.data.images;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
+  },
+
   async bookmarkEvent(eventId: string): Promise<void> {
     await api.post(`/events/${eventId}/bookmark`);
   },

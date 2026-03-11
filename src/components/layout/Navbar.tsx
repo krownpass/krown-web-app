@@ -78,7 +78,7 @@ export function Navbar() {
         {/* Right actions */}
         <div className="flex items-center gap-2">
           <Link
-            href="/search"
+            href={pathname === '/cafes' ? '/search?type=cafes' : pathname === '/events' ? '/search?type=events' : '/search'}
             className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
           >
             <Search size={18} />

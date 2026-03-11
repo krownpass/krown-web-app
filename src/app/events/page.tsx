@@ -1,25 +1,27 @@
+
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ChevronRight } from 'lucide-react';
 import { EventCard } from '@/components/event/EventCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useEvents, useFeaturedEvents } from '@/queries/useEvents';
-import { useDebounce } from '@/hooks/useDebounce';
 import type { EventFilters } from '@/types/event';
 import { EVENT_CATEGORIES } from '@/lib/constants';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 
-export default function EventsPage() {
-  const [search, setSearch] = useState('');
+function EventsContent() {
+  const searchParams = useSearchParams();
+  const urlSearchParams = searchParams.get('search') || '';
+  const [search, setSearch] = useState(urlSearchParams);
   const [category, setCategory] = useState('');
 
-  const debouncedSearch = useDebounce(search, 400);
   const apiFilters: EventFilters = {
-    search: debouncedSearch || undefined,
+    search: search || urlSearchParams || undefined,
   };
 
   const { data: featuredEvents = [] } = useFeaturedEvents();
@@ -206,5 +208,13 @@ export default function EventsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EventsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <EventsContent />
+    </Suspense>
   );
 }

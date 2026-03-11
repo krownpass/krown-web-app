@@ -31,8 +31,24 @@ export interface Event {
   organizer_image?: string;
   schedule?: ScheduleItem[];
   faq?: FaqItem[];
+  gallery_images?: string[];
+  instructions?: string[];
+  ticket_tiers?: TicketTier[];
+  is_revealed?: boolean;
+  confirmed_registrations?: number;
+  requires_krown_subscription?: boolean;
+  favorite_count?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface TicketTier {
+  tier_id: string;
+  name: string;
+  description?: string;
+  price: number;
+  quantity: number;
+  sold_count: number;
 }
 
 export interface ScheduleItem {

@@ -87,3 +87,47 @@ export function CountdownTimer({ targetDate, className }: CountdownTimerProps) {
     </div>
   );
 }
+
+/** Compact inline countdown for placing beside titles */
+export function InlineCountdown({ targetDate, className }: CountdownTimerProps) {
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft(targetDate));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(getTimeLeft(targetDate));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [targetDate]);
+
+  const isOver = Object.values(timeLeft).every((v) => v === 0);
+
+  if (isOver) {
+    return (
+      <span className={`text-xs text-[#C11E38] font-semibold ${className ?? ''}`}>
+        Live Now
+      </span>
+    );
+  }
+
+  return (
+    <div className={`inline-flex items-center gap-1.5 bg-[#1A0A10] border border-[#800020]/40 rounded-lg px-3 py-1.5 ${className ?? ''}`}>
+      <span className="text-[10px] text-white/50 uppercase tracking-wider mr-0.5">Starts in</span>
+      <InlineUnit value={timeLeft.days} label="d" />
+      <span className="text-white/30 text-xs font-bold">:</span>
+      <InlineUnit value={timeLeft.hours} label="h" />
+      <span className="text-white/30 text-xs font-bold">:</span>
+      <InlineUnit value={timeLeft.minutes} label="m" />
+      <span className="text-white/30 text-xs font-bold">:</span>
+      <InlineUnit value={timeLeft.seconds} label="s" />
+    </div>
+  );
+}
+
+function InlineUnit({ value, label }: { value: number; label: string }) {
+  return (
+    <span className="text-sm font-bold text-white tabular-nums font-mono">
+      {value.toString().padStart(2, '0')}
+      <span className="text-[10px] text-white/40 font-normal">{label}</span>
+    </span>
+  );
+}

@@ -1,14 +1,18 @@
+
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, Clock } from 'lucide-react';
+import { MapPin, Calendar, Users, Clock, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTime, getCapacityPercent } from '@/lib/utils';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ImageWithFallback } from '@/components/shared/ImageWithFallback';
 import type { Event } from '@/types/event';
+import { useAuthStore } from '@/stores/authStore';
+import { useAddEventBookmark, useRemoveEventBookmark, useEventBookmarks } from '@/queries/useUser';
+import { toast } from 'sonner';
 
 interface EventCardProps {
   event: Event;
@@ -20,6 +24,41 @@ export function EventCard({ event, className }: EventCardProps) {
     event.current_registrations,
     event.max_capacity
   );
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { data: userBookmarks = [] } = useEventBookmarks();
+  const { mutate: addBookmark } = useAddEventBookmark();
+  const { mutate: removeBookmark } = useRemoveEventBookmark();
+
+  const isServerBookmarked = event.is_bookmarked || userBookmarks.some((b: any) => b.event_id === event.event_id);
+  const [isBookmarked, setIsBookmarked] = useState(isServerBookmarked);
+
+  // Sync state if server data changes
+  useEffect(() => {
+    setIsBookmarked(isServerBookmarked);
+  }, [isServerBookmarked]);
+
+  const handleBookmark = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      toast.error('Please sign in to save events');
+      return;
+    }
+
+    if (isBookmarked) {
+      setIsBookmarked(false);
+      removeBookmark(event.event_id, {
+        onError: () => setIsBookmarked(true),
+      });
+    } else {
+      setIsBookmarked(true);
+      addBookmark(event.event_id, {
+        onError: () => setIsBookmarked(false),
+      });
+    }
+  };
 
   const startDate = new Date(event.start_time);
   const month = startDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
@@ -60,6 +99,20 @@ export function EventCard({ event, className }: EventCardProps) {
                   {event.category}
                 </span>
               )}
+            </div>
+
+            {/* Price badge */}
+            <div className="absolute top-3 right-3">
+              <span
+                className={cn(
+                  'text-xs font-bold px-2.5 py-1 rounded-full',
+                  event.is_paid
+                    ? 'bg-black/60 text-white backdrop-blur-sm'
+                    : 'bg-green-500/90 text-white'
+                )}
+              >
+                {event.is_paid ? `₹${event.base_price}` : 'Free'}
+              </span>
             </div>
           </div>
 

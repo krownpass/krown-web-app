@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { CafeCard } from '@/components/cafe/CafeCard';
@@ -12,12 +12,16 @@ import { useAuthStore } from '@/stores/authStore';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 import type { CafeFilters } from '@/types/cafe';
+import { useSearchParams } from 'next/navigation';
 
 const vibeFilters = ['Fun & Wild', 'Cozy & Comfy', 'Date Night', 'Work & Study', 'Brunch Gang'];
 
-export default function CafesPage() {
+function CafesContent() {
   const { isAuthenticated } = useAuthStore();
-  const [search, setSearch] = useState('');
+  const searchParams = useSearchParams();
+  const urlSearchParams = searchParams.get('search') || '';
+
+  const [search, setSearch] = useState(urlSearchParams);
   const [selectedVibe, setSelectedVibe] = useState('');
   const [openNow, setOpenNow] = useState(false);
   const [sortBy, setSortBy] = useState<'rating' | 'distance' | 'newest'>('rating');
@@ -90,7 +94,7 @@ export default function CafesPage() {
               spellCheck={false}
               className="bg-transparent text-white text-sm flex-1 outline-none placeholder:text-white/30 min-w-0"
             />
-            <button 
+            <button
               onClick={() => setSearch('')}
               tabIndex={search ? 0 : -1}
               className={`flex-shrink-0 p-1 flex items-center justify-center transition-opacity ${
@@ -107,7 +111,7 @@ export default function CafesPage() {
               <button
                 onClick={() => setOpenNow(!openNow)}
                 className={`flex-shrink-0 text-sm px-4 py-2 rounded-full border transition-all ${
-                  openNow 
+                  openNow
                     ? 'bg-[#800020] border-[#800020] text-white shadow-[0_0_15px_rgba(128,0,32,0.3)]'
                     : 'bg-[#1A1A1A] border-[#2A2A2A] text-white/60 hover:border-[#3A3A3A] hover:text-white'
                 }`}
@@ -189,7 +193,7 @@ export default function CafesPage() {
                   cafe.is_bookmarked ||
                   userBookmarks.some((b) => b.cafe_id === cafe.cafe_id);
 
-                const aspect = i % 5 === 0 ? 'tall' : i % 3 === 0 ? 'square' : 'standard';
+                const aspect = i % 5 === 0 ? 'tall' as const : i % 3 === 0 ? 'square' as const : 'standard' as const;
 
                 return (
                   <motion.div
@@ -199,8 +203,8 @@ export default function CafesPage() {
                     transition={{ delay: Math.min(i * 0.05, 0.4) }}
                     className="break-inside-avoid"
                   >
-                    <CafeCard 
-                      cafe={{ ...cafe, is_bookmarked: _isBookmarked }} 
+                    <CafeCard
+                      cafe={{ ...cafe, is_bookmarked: _isBookmarked }}
                       onBookmark={handleBookmarkToggle}
                       aspectRatio={aspect}
                     />
@@ -224,5 +228,13 @@ export default function CafesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CafesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-white/40">Loading cafes...</div>}>
+      <CafesContent />
+    </Suspense>
   );
 }

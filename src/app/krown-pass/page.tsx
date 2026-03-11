@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Crown, Check, ExternalLink, Percent, Star, Coffee, Zap, Headphones } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Crown, Check, ExternalLink, Percent, Star, Coffee, Zap, Headphones, ArrowLeft } from 'lucide-react';
 import { KROWN_PASS_BENEFITS } from '@/lib/constants';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -15,8 +16,16 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 export default function KrownPassPage() {
+  const router = useRouter();
+
   return (
     <div className="max-w-2xl mx-auto px-4 md:px-6 py-8">
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={() => router.back()} className="p-2 rounded-xl bg-[#1E1E1E] border border-[#2A2A2A] text-white/60">
+          <ArrowLeft size={18} />
+        </button>
+      </div>
+
       {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
