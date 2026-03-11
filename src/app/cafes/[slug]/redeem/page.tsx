@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, X } from 'lucide-react';
 import Image from 'next/image';
 import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { useCafeDetail, useCafeMenu } from '@/queries/useCafeDetail';
@@ -29,6 +29,7 @@ export default function RedeemDrinkPage() {
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [redeemSuccessData, setRedeemSuccessData] = useState<any | null>(null);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
   const [showKrownModal, setShowKrownModal] = useState(false);
   const [plansLoaded, setPlansLoaded] = useState(false);
 
@@ -61,6 +62,23 @@ export default function RedeemDrinkPage() {
     setSelectedItem(item);
   };
 
+  const performRedemption = async (planToUse: any) => {
+    if (!selectedItem || !planToUse || !cafe) return;
+    setIsProcessing(true);
+    try {
+      const res = await rewardsService.redeemDrink({
+        cafeId: cafe.cafe_id,
+        itemId: selectedItem.item_id,
+        userSubscriptionId: planToUse.id,
+      });
+      setRedeemSuccessData(res);
+    } catch (err: any) {
+      setRedeemError(err?.response?.data?.message || 'Failed to redeem drink');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleContinue = () => {
     if (!selectedItem) return;
     const isMember = profile?.has_krown_pass || user?.has_krown_pass;
@@ -72,59 +90,114 @@ export default function RedeemDrinkPage() {
     setLoadingPlans(true);
     rewardsService.getRedemptionOptions()
       .then((res: any) => {
-        setPlans(res);
-        setPlansLoaded(true);
+        if (Array.isArray(res) && res.length === 1) {
+          setSelectedPlan(res[0]);
+          performRedemption(res[0]);
+        } else {
+          setPlans(res);
+          setPlansLoaded(true);
+        }
       })
       .catch(() => toast.error('Failed to load plans'))
       .finally(() => setLoadingPlans(false));
   };
 
-  const handleRedeem = async () => {
-    if (!selectedItem || !selectedPlan || !cafe) return;
-    setIsProcessing(true);
-    try {
-      const res = await rewardsService.redeemDrink({
-        cafeId: cafe.cafe_id,
-        itemId: selectedItem.item_id,
-        userSubscriptionId: selectedPlan.id,
-      });
-      setRedeemSuccessData(res);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to redeem drink');
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleRedeem = () => {
+    performRedemption(selectedPlan);
   };
+
+    if (redeemError) {
+    return (
+      <ProtectedRoute>
+        <div className="max-w-2xl mx-auto px-4 py-16 min-h-screen flex flex-col items-center justify-center text-center">
+          <style>{`
+            @keyframes scaleIn {
+              0% { transform: scale(0); opacity: 0; }
+              60% { transform: scale(1.1); opacity: 1; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            .animate-scale-in {
+              animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+
+          <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6 animate-scale-in">
+            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.5)]">
+              <X size={32} className="text-white" strokeWidth={3} />
+            </div>
+          </div>
+          
+          <h1 className="text-3xl font-playfair font-bold text-white mb-4 animate-scale-in" style={{ animationDelay: '0.1s', opacity: 0 }}>
+            Redemption Failed
+          </h1>
+          
+          <p className="text-white/60 mb-12 text-lg max-w-sm animate-scale-in" style={{ animationDelay: '0.2s', opacity: 0 }}>
+            {redeemError}
+          </p>
+
+          <div className="w-full max-w-sm flex flex-col gap-4 animate-scale-in" style={{ animationDelay: '0.3s', opacity: 0 }}>
+            <button 
+              onClick={() => {
+                setRedeemError(null);
+                router.push(`/cafes/${params.slug}`);
+              }}
+              className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white py-4 rounded-xl font-semibold hover:border-white/40 transition-all"
+            >
+              Back to Cafe
+            </button>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   if (redeemSuccessData) {
     return (
       <ProtectedRoute>
-        <div className="max-w-2xl mx-auto px-4 py-16 min-h-screen flex flex-col items-center text-center">
-          <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
-            <Check size={40} className="text-green-500" />
+        <div className="max-w-2xl mx-auto px-4 py-8 min-h-screen flex flex-col items-center justify-center text-center">
+          <style>{`
+            @keyframes scaleIn {
+              0% { transform: scale(0); opacity: 0; }
+              60% { transform: scale(1.1); opacity: 1; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            .animate-scale-in {
+              animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+
+          <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 animate-scale-in">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.5)]">
+              <Check size={32} className="text-white" strokeWidth={3} />
+            </div>
           </div>
-          <h1 className="text-3xl font-playfair font-bold text-white mb-4">Drink Redeemed Successfully!</h1>
-          <p className="text-white/60 mb-8">Enjoy your drink. This redemption has been recorded.</p>
           
-          <div className="bg-[#1A1A1A] border border-[#333333] p-8 rounded-2xl w-full max-w-sm mb-8 text-center flex flex-col items-center">
-             <span className="text-[13px] text-[#9CA3AF] mb-3">Your redemption code</span>
-             <div className="text-4xl font-bold text-white tracking-[0.2em] mb-4 font-poppins">
-               {redeemSuccessData.redeem_code 
+          <h1 className="text-3xl font-playfair font-bold text-white mb-2 animate-scale-in" style={{ animationDelay: '0.1s', opacity: 0 }}>
+            Drink Redeemed!
+          </h1>
+          <p className="text-green-400 mb-8 animate-scale-in" style={{ animationDelay: '0.2s', opacity: 0 }}>
+            Success. Show this code to the staff.
+          </p>
+          
+          <div className="bg-[#1A1A1A] border border-[#333333] p-8 rounded-2xl w-full max-w-sm mb-8 text-center flex flex-col items-center animate-scale-in" style={{ animationDelay: '0.3s', opacity: 0 }}>
+             <span className="text-[13px] text-[#9CA3AF] mb-3 uppercase tracking-wider">Redemption Code</span>
+             <div className="text-5xl font-bold text-white tracking-[0.2em] mb-4 font-poppins">
+                 {redeemSuccessData.redeem_code 
                  ? `${redeemSuccessData.redeem_code.slice(0, 4)} ${redeemSuccessData.redeem_code.slice(4)}`
                  : (redeemSuccessData.code || '— — —')}
              </div>
-             <div className="text-sm text-white mb-1">{selectedItem?.name}</div>
-             <div className="text-xs text-[#9CA3AF]">{cafe?.name}</div>
+             <div className="text-md text-white font-medium mb-1">{selectedItem?.name}</div>
+             <div className="text-sm text-[#9CA3AF] bg-[#2A2A2A] px-3 py-1 rounded-full mt-2">{cafe?.name}</div>
           </div>
 
-          <div className="text-center mb-8">
-            <p className="text-white/80 text-[15px] mb-1">Tell this code to the café staff to redeem your drink.</p>
+          <div className="text-center mb-8 animate-scale-in" style={{ animationDelay: '0.4s', opacity: 0 }}>
             <p className="text-[#9CA3AF] text-sm">Valid for the next 10 minutes</p>
           </div>
 
           <button 
             onClick={() => router.push(`/cafes/${params.slug}`)}
-            className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white py-4 rounded-xl font-semibold hover:bg-[#2A2A2A] transition-all"
+            className="w-full max-w-sm bg-[#800020] text-white py-4 rounded-xl font-semibold hover:bg-[#A00028] transition-all animate-scale-in"
+            style={{ animationDelay: '0.5s', opacity: 0 }}
           >
             Done
           </button>
