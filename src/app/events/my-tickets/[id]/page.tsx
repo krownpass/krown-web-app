@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Download, Share2 } from 'lucide-react';
@@ -12,11 +12,54 @@ import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { formatDate, formatTime } from '@/lib/utils';
 import { getStatusColor } from '@/lib/utils';
 import Image from 'next/image';
+import { toPng } from 'html-to-image';
+import { toast } from 'sonner';
 
 export default function TicketDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { data: ticket, isLoading } = useTicketDetail(params.id);
+  const ticketRef = useRef<HTMLDivElement>(null);
+
+  const handleDownload = async () => {
+    if (!ticketRef.current) return;
+    try {
+      // Adding a small delay or ensuring images are loaded before generating might help,
+      // but toPng usually handles it.
+      const dataUrl = await toPng(ticketRef.current, { 
+        cacheBust: true, 
+        skipFonts: true, // Bypass html-to-image trying to parse/download webfonts and crashing on modern CSS properties
+        style: { transform: 'scale(1)', margin: '0' } // prevent weird scaling issues on zoom
+      });
+      const link = document.createElement('a');
+      link.download = `ticket_${(ticket as any)?.event_title?.replace(/\s+/g, '_') || 'event'}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success('Ticket downloaded successfully!');
+    } catch (err) {
+      console.error('Failed to download ticket', err);
+      toast.error('Could not download ticket');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareData = {
+        title: 'My Event Ticket',
+        text: `Join me at ${(ticket as any)?.event_title || 'this event'}!`,
+        url: window.location.href,
+      };
+      
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing', err);
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -26,7 +69,7 @@ export default function TicketDetailPage() {
             <ArrowLeft size={18} />
           </button>
           <h1 className="font-playfair text-xl font-bold text-white">Your Ticket</h1>
-          <button className="p-2 rounded-xl bg-[#1E1E1E] border border-[#2A2A2A] text-white/60">
+          <button onClick={handleShare} className="p-2 rounded-xl bg-[#1E1E1E] border border-[#2A2A2A] text-white/60 hover:text-white transition-colors">
             <Share2 size={18} />
           </button>
         </div>
@@ -36,7 +79,7 @@ export default function TicketDetailPage() {
         ) : !ticket ? null : (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
             {/* Ticket card */}
-            <div className="bg-[#1E1E1E] border border-[#2A2A2A] rounded-2xl overflow-hidden">
+            <div ref={ticketRef} className="bg-[#1E1E1E] border border-[#2A2A2A] rounded-2xl overflow-hidden p-0 m-0">
                 {(ticket as any).event_cover_image && (
                   <div className="relative h-40">
                     <Image src={(ticket as any).event_cover_image} alt={(ticket as any).event_title ?? ''} fill className="object-cover" sizes="448px" />
@@ -76,7 +119,7 @@ export default function TicketDetailPage() {
                     <p className="text-white/40 text-xs mt-4 font-mono uppercase">ID: {(ticket as any).registration_id?.slice(0,8) || (ticket as any).ticket_number}</p>                    </div>
                   </div>            </div>
 
-            <button className="w-full mt-4 flex items-center justify-center gap-2 py-3 bg-[#1E1E1E] border border-[#2A2A2A] text-white/60 rounded-xl text-sm hover:border-[#800020] transition-all">
+            <button onClick={handleDownload} className="w-full mt-4 flex items-center justify-center gap-2 py-3 bg-[#1E1E1E] border border-[#2A2A2A] text-white/60 rounded-xl text-sm hover:border-[#800020] hover:text-white transition-all">
               <Download size={16} />
               Download Ticket
             </button>

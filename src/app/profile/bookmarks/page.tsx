@@ -75,7 +75,7 @@ export default function BookmarksPage() {
               <EmptyState icon="Bookmark" title="No saved cafés" subtitle="Bookmark cafés to find them here" actionLabel="Explore Cafés" onAction={() => router.push('/cafes')} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cafes.map((cafe, i) => (
+                {Array.from(new Map(cafes.map(cafe => [cafe.cafe_id, cafe])).values()).map((cafe, i) => (
                   <motion.div key={cafe.cafe_id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                     <CafeCard
                       cafe={{ ...cafe, is_bookmarked: true }}
@@ -91,14 +91,26 @@ export default function BookmarksPage() {
         {activeTab === 'events' && (
           <>
             {isLoadingEvents ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[280px] rounded-xl" />)}
+              <div className="flex flex-col gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex flex-col md:flex-row gap-4 p-4 rounded-2xl bg-[#0A0A0A] border border-white/[0.05]">
+                    <Skeleton className="w-full md:w-[35%] h-[200px] rounded-xl shrink-0" />
+                    <div className="flex-1 py-4 flex flex-col justify-center space-y-4">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-8 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <div className="mt-auto pt-4">
+                        <Skeleton className="h-8 w-32 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : events.length === 0 ? (
               <EmptyState icon="Bookmark" title="No saved events" subtitle="Bookmark events to find them here" actionLabel="Explore Events" onAction={() => router.push('/events')} />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {events.map((event, i) => (
+              <div className="flex flex-col gap-6">
+                {Array.from(new Map(events.map(event => [event.event_id, event])).values()).map((event, i) => (
                   <motion.div key={event.event_id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                     <EventCard
                       event={{ ...event, is_bookmarked: true }}

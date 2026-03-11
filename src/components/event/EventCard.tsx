@@ -101,6 +101,22 @@ export function EventCard({ event, className }: EventCardProps) {
               )}
             </div>
 
+            {/* Favorite / Bookmark Button */}
+            <button
+              onClick={handleBookmark}
+              className="absolute bottom-4 right-4 p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 transition-all duration-300 z-20 group/btn"
+            >
+              <Heart
+                size={18}
+                className={cn(
+                  "transition-all duration-300",
+                  isBookmarked
+                    ? "fill-[#C11E38] text-[#C11E38] scale-110"
+                    : "fill-transparent text-white group-hover/btn:text-[#C11E38] group-hover/btn:scale-110"
+                )}
+              />
+            </button>
+
             {/* Price badge */}
             <div className="absolute top-3 right-3">
               <span
