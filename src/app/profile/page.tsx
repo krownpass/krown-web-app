@@ -184,8 +184,8 @@ export default function ProfilePage() {
                   )}
                 </motion.div>
 
-                {/* Logout Button */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                {/* Logout Button (Desktop) */}
+                <motion.div className="hidden lg:block" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
                   <button
                     onClick={() => setShowLogoutConfirm(true)}
                     className="w-full flex items-center justify-center gap-2 p-4 bg-white/[0.01] border border-white/[0.03] rounded-[1.5rem] text-white/40 hover:bg-red-500/5 hover:border-red-900/30 hover:text-red-400 transition-all duration-300 font-medium text-sm"
@@ -280,6 +280,20 @@ export default function ProfilePage() {
                 </section>
 
               </div>
+
+              {/* Mobile Logout Button */}
+              <div className="lg:hidden col-span-1 mt-4 mb-8">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+                  <button
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="w-full flex items-center justify-center gap-3 p-[18px] bg-red-500/[0.03] border border-red-500/10 rounded-[1.5rem] text-red-400/80 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all duration-300 font-medium text-[15px] shadow-[0_0_20px_rgba(220,38,38,0.05)]"
+                  >
+                    <LogOut size={18} />
+                    <span className="tracking-wide">Sign Out</span>
+                  </button>
+                </motion.div>
+              </div>
+
             </div>
           ) : null}
         </div>

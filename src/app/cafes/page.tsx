@@ -77,8 +77,7 @@ function CafesContent() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-12">
       {/* Header */}
-      <div className="w-full bg-[#121212] border-b border-[#2A2A2A] filter drop-shadow">
-        <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 py-10 md:py-16">
+      <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 pt-6 pb-2 md:pt-10 md:pb-4">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="font-playfair text-4xl md:text-5xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/50">
               Explore Cafés
@@ -88,7 +87,55 @@ function CafesContent() {
             </p>
           </motion.div>
         </div>
-      </div>
+
+      {/* Adventure — Swipe Deck */}
+      {swipeCafes.length >= 3 && (
+        <div className="relative mb-8 overflow-hidden">
+          {/* Background ambiance */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[120px] opacity-[0.07]"
+              style={{ background: 'radial-gradient(circle, #951334, transparent)' }}
+            />
+          </div>
+
+          <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 relative">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="pt-2 pb-10 md:pt-4 md:pb-14"
+            >
+              {/* Section header */}
+              <div className="text-center mb-10">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-4 flex items-center justify-center gap-3"
+                >
+                  <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#800020]/50" />
+                  <p className="text-lg md:text-xl text-white/50">
+                    Swipe{' '}
+                    till you find your{' '}
+                    <span className="font-playfair text-white/80 italic">Match</span>
+                  </p>
+                  <div className="h-px w-8 bg-gradient-to-l from-transparent to-[#800020]/50" />
+                </motion.div>
+              </div>
+
+              <CafeSwipeStack
+                cafes={swipeCafes}
+                onCardPress={(cafe) =>
+                  router.push(`/cafes/${cafe.slug ?? cafe.cafe_id}`)
+                }
+              />
+            </motion.div>
+          </div>
+
+          {/* Bottom divider */}
+          <div className="max-w-[600px] mx-auto h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+        </div>
+      )}
 
       {/* Toolbar Strip */}
       <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 -mt-8 relative z-10 mb-10">
@@ -172,64 +219,6 @@ function CafesContent() {
           </div>
         </div>
       </div>
-
-      {/* Adventure — Swipe Deck */}
-      {swipeCafes.length >= 3 && (
-        <div className="relative mb-16 overflow-hidden">
-          {/* Background ambiance */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[120px] opacity-[0.07]"
-              style={{ background: 'radial-gradient(circle, #951334, transparent)' }}
-            />
-          </div>
-
-          <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8 relative">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="py-10 md:py-14"
-            >
-              {/* Section header */}
-              <div className="text-center mb-10">
-                <motion.h2
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="font-playfair text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-white/90 to-white/60"
-                >
-                  Up For an Adventure?
-                </motion.h2>
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="mt-4 flex items-center justify-center gap-3"
-                >
-                  <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#800020]/50" />
-                  <p className="text-lg md:text-xl text-white/50">
-                    Swipe{' '}
-                    <span className="font-playfair text-white/80 italic">Left</span>{' '}
-                    till you find your{' '}
-                    <span className="font-playfair text-white/80 italic">Match</span>
-                  </p>
-                  <div className="h-px w-8 bg-gradient-to-l from-transparent to-[#800020]/50" />
-                </motion.div>
-              </div>
-
-              <CafeSwipeStack
-                cafes={swipeCafes}
-                onCardPress={(cafe) =>
-                  router.push(`/cafes/${cafe.slug ?? cafe.cafe_id}`)
-                }
-              />
-            </motion.div>
-          </div>
-
-          {/* Bottom divider */}
-          <div className="max-w-[600px] mx-auto h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-        </div>
-      )}
 
       <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-8">
         {/* Grid */}

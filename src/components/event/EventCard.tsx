@@ -20,11 +20,6 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, className }: EventCardProps) {
-  const capacityPercent = getCapacityPercent(
-    event.current_registrations,
-    event.max_capacity
-  );
-
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: userBookmarks = [] } = useEventBookmarks();
   const { mutate: addBookmark } = useAddEventBookmark();
@@ -69,10 +64,10 @@ export function EventCard({ event, className }: EventCardProps) {
     <motion.div
       whileHover={{ scale: 1.01, y: -2 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className={cn('group relative block', className)}
+      className={cn('group relative block h-full', className)}
     >
-      <Link href={`/events/${event.slug ?? event.event_id}`}>
-        <div className="flex flex-col md:flex-row bg-[#0A0A0A] border border-white/[0.05] rounded-2xl overflow-hidden hover:border-[#800020]/50 hover:shadow-[0_0_30px_rgba(128,0,32,0.15)] transition-all duration-500">
+      <Link href={`/events/${event.slug ?? event.event_id}`} className="block h-full">
+        <div className="flex flex-col md:flex-row bg-[#0A0A0A] border border-white/[0.05] rounded-2xl overflow-hidden hover:border-[#800020]/50 hover:shadow-[0_0_30px_rgba(128,0,32,0.15)] transition-all duration-500 h-full">
           
           {/* Image & Date Block */}
           <div className="relative w-full md:w-[35%] h-[240px] md:h-auto md:min-h-[260px] overflow-hidden shrink-0">
@@ -93,15 +88,6 @@ export function EventCard({ event, className }: EventCardProps) {
               <span className="text-white text-2xl font-black font-playfair leading-none">{day}</span>
             </div>
 
-            {/* Category badge */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
-              {event.category && (
-                <span className="text-[10px] font-bold px-3 py-1.5 rounded-sm bg-white text-black uppercase tracking-wider border border-white/20 shadow-lg">
-                  {event.category}
-                </span>
-              )}
-            </div>
-
             {/* Favorite / Bookmark Button */}
             <button
               onClick={handleBookmark}
@@ -117,47 +103,52 @@ export function EventCard({ event, className }: EventCardProps) {
                 )}
               />
             </button>
+          </div>
 
-            {/* Price badge */}
-            <div className="absolute top-3 right-3">
+          {/* Content */}
+          <div className="flex-1 min-w-0 p-5 md:p-8 flex flex-col justify-center relative">
+            
+            {/* Type/Price badge (moved from image to top right of content) */}
+            <div className="absolute top-5 right-5 z-20">
               <span
                 className={cn(
-                  'text-xs font-bold px-2.5 py-1 rounded-full',
+                  'text-xs font-bold px-2.5 py-1.5 rounded-full shadow-lg border border-white/10',
                   event.is_paid
-                    ? 'bg-black/60 text-white backdrop-blur-sm'
+                    ? 'bg-black/80 text-white backdrop-blur-md'
                     : 'bg-green-500/90 text-white'
                 )}
               >
                 {event.is_paid ? `₹${event.base_price}` : 'Free'}
               </span>
             </div>
-          </div>
 
-          {/* Content */}
-          <div className="flex-1 p-5 md:p-8 flex flex-col justify-center relative">
             <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
             
-            <div className="relative z-10 flex flex-col h-full justify-between gap-6">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3 text-xs font-medium text-white/50 tracking-wide uppercase">
+            <div className="relative z-10 flex flex-col h-full justify-between gap-6 w-full min-w-0">
+              <div className="w-full min-w-0 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between mb-4 pr-16 w-full">
+                  <div className="flex items-center gap-3 text-xs font-medium text-white/50 tracking-wide uppercase shrink-0">
                      <span className="flex items-center gap-1.5 border border-white/10 px-2.5 py-1 rounded-md bg-white/[0.02]">
                        <Clock size={12} className="text-[#800020]" />
                        {formatTime(event.start_time)}
                      </span>
-                     {event.is_paid ? (
-                       <span className="text-white shrink-0 block border border-[#800020]/30 bg-[#800020]/10 px-2.5 py-1 rounded-md text-[11px] uppercase">₹{event.base_price}</span>
-                     ) : (
-                       <span className="text-white/70 block shrink-0 border border-white/10 px-2.5 py-1 rounded-md bg-white/[0.02]">Free</span>
-                     )}
                   </div>
                 </div>
 
-                <h3 className="font-playfair font-bold text-white text-2xl md:text-3xl leading-tight mb-3 group-hover:text-[#800020] transition-colors duration-300">
+                <h3 className="font-playfair font-bold text-white text-2xl md:text-3xl leading-tight mb-2 group-hover:text-[#800020] transition-colors duration-300 w-full break-words">
                   {event.title}
                 </h3>
                 
-                <div className="flex items-center gap-2 text-sm text-white/60">
+                {/* Scrollable Category */}
+                {event.category && (
+                  <div className="flex overflow-x-auto w-full max-w-full mb-4 pb-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-[#800020]/15 text-[#ff6b81] uppercase tracking-wider whitespace-nowrap border border-[#800020]/30 shadow-sm shrink-0">
+                      {event.category}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2 text-sm text-white/60 w-full">
                   <MapPin size={14} className="shrink-0 text-[#800020]/70" />
                   <span className="truncate">{event.venue_name}</span>
                 </div>
@@ -166,24 +157,17 @@ export function EventCard({ event, className }: EventCardProps) {
               {/* Action & Capacity Row */}
               <div className="flex items-end justify-between mt-auto pt-5 border-t border-white/[0.05]">
                 <div className="flex-1 max-w-[220px]">
-                  {event.max_capacity != null && (
-                    <div className="space-y-2.5">
-                       <div className="flex items-center justify-between text-[10px] text-white/40 font-bold uppercase tracking-widest">
-                         <span>Tickets Sold</span>
-                         <span>{capacityPercent}%</span>
-                       </div>
-                       <ProgressBar
-                         value={capacityPercent}
-                         height={3}
-                         color={capacityPercent >= 80 ? '#C11E38' : '#800020'}
-                       />
-                       {event.seats_left != null && event.seats_left <= 10 && (
-                         <p className="text-[10px] text-[#C11E38] font-bold tracking-widest uppercase">Almost Sold Out</p>
-                       )}
+                  {event.seats_left != null && !isPastEvent && (
+                    <div className="space-y-1.5 hover:-translate-y-0.5 transition-transform">
+                       <span className="inline-block px-3 py-1.5 rounded-lg bg-[#800020]/20 border border-[#800020]/30 shadow-[0_0_15px_rgba(128,0,32,0.15)]">
+                         <span className="text-[11px] text-[#ff6b8b] font-bold tracking-widest uppercase">
+                           {event.seats_left} {event.seats_left === 1 ? 'Seat' : 'Seats'} Remaining
+                         </span>
+                       </span>
                     </div>
                   )}
                 </div>
-                
+
                 <div className="ml-4 shrink-0">
                   {isPastEvent ? (
                     <span className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white/50 cursor-not-allowed uppercase tracking-wider text-[10px]">

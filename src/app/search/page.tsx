@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Search, X, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { CafeCard } from '@/components/cafe/CafeCard';
-import { EventCard } from '@/components/event/EventCard';
+import { EventCardCompact } from '@/components/event/EventCardCompact';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -176,7 +176,7 @@ export default function SearchPage() {
                               </Link>
                             </div>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                              {events.map((event) => <EventCard key={event.event_id} event={event} />)}
+                              {events.map((event) => <EventCardCompact key={event.event_id} event={event} />)}
                             </div>
                           </div>
                         ) : (
