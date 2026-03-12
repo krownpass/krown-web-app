@@ -75,8 +75,8 @@ export const authService = {
     const res = await api.post("/auth/otp/verify", {
       phone: formatted,
       otp,
-      ...(session_id ? { session_id } : {})
-      // ...deviceMeta
+      ...(session_id ? { session_id } : {}),
+      ...deviceMeta
     });
     const d = res.data.data ?? res.data;
     return { token: d.token, refresh_token: d.refresh_token, user: mapUser(d.user ?? d) };
