@@ -34,6 +34,33 @@ export function formatTime(date: string | Date | undefined | null): string {
   });
 }
 
+/**
+ * Formats a plain time string (e.g. "14:30", "9:00", "14:30-15:30") to
+ * 12-hour AM/PM notation: "02:30 PM". Handles range slots by formatting
+ * both ends: "02:30 PM – 03:30 PM".
+ */
+export function formatTimeSlot(slot: string | undefined | null): string {
+  if (!slot) return "";
+
+  const formatSingle = (t: string): string => {
+    const [hStr, mStr] = t.trim().split(":");
+    const h = parseInt(hStr, 10);
+    const m = parseInt(mStr ?? "0", 10);
+    if (isNaN(h)) return t.trim();
+    const period = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${period}`;
+  };
+
+  // Handle range like "14:00-15:00" or "14:00 - 15:00"
+  const parts = slot.split(/-(?=\d)/);
+  if (parts.length === 2) {
+    return `${formatSingle(parts[0])} – ${formatSingle(parts[1])}`;
+  }
+
+  return formatSingle(slot);
+}
+
 export function formatRelativeTime(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const now = new Date();

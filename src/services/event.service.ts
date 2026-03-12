@@ -64,14 +64,17 @@ export const eventService = {
       user_id: "",
       ticket_number: r.registration_id?.slice(0, 8).toUpperCase() || "",
       qr_code: "",
-      status: r.status === "CONFIRMED" ? "active" : r.status === "PENDING" ? "active" : "cancelled",
-      registered_at: r.start_time || "",
+      // Pass raw DB enum: PENDING | CONFIRMED | CHECKED_IN | REJECTED | CANCELLED
+      status: r.status as Ticket['status'],
+      registered_at: r.created_at || r.start_time || "",
       event: {
         event_id: r.event_id,
         title: r.title,
         cover_image: r.cover_image,
         start_time: r.start_time,
+        end_time: r.end_time ?? null,
         venue_name: r.venue_name || r.location,
+        event_status: r.event_status,
       } as any
     }));
   },

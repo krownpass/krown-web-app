@@ -34,6 +34,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [signupErrors, setSignupErrors] = useState<FormErrors>({});
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const sendingRef = useRef(false);
+  const verifyingRef = useRef(false);
 
   const { login, verifyOtp, signup, isLoading } = useAuthStore();
 
@@ -75,6 +77,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       toast.error('Enter a valid 10-digit mobile number');
       return;
     }
+    if (sendingRef.current) return;   // prevent double-send
+    sendingRef.current = true;
     try {
       await login(phone);
       setStep('otp');
@@ -82,6 +86,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       setCanResend(false);
     } catch {
       toast.error('Failed to send OTP. Please try again.');
+    } finally {
+      sendingRef.current = false;
     }
   };
 
@@ -111,6 +117,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   };
 
   const handleVerify = useCallback(async (code: string) => {
+    if (verifyingRef.current) return;   // prevent paste+change double-fire
+    verifyingRef.current = true;
     try {
       await verifyOtp(phone, code);
       toast.success('Welcome to Krown!');
@@ -126,10 +134,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
+    } finally {
+      verifyingRef.current = false;
     }
   }, [verifyOtp, phone, onClose, onSuccess]);
 
   const handleResend = async () => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     try {
       await login(phone);
       setCountdown(60);
@@ -137,6 +149,8 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       toast.success('OTP resent!');
     } catch {
       toast.error('Failed to resend OTP.');
+    } finally {
+      sendingRef.current = false;
     }
   };
 

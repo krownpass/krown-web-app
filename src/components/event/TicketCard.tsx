@@ -3,8 +3,8 @@ import Image from 'next/image';
 import { Calendar, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTime } from '@/lib/utils';
-import { Badge } from '@/components/ui/Badge';
 import type { Ticket } from '@/types/event';
+import { TicketStatusBadge } from '@/components/event/TicketStatusBadge';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -12,22 +12,9 @@ interface TicketCardProps {
   className?: string;
 }
 
-const statusVariantMap: Record<string, 'success' | 'default' | 'error'> = {
-  active: 'success',
-  confirmed: 'success',
-  CONFIRMED: 'success',
-  used: 'default',
-  CHECKED_IN: 'default',
-  cancelled: 'error',
-  CANCELLED: 'error',
-  refunded: 'default',
-  PENDING: 'default'
-};
-
 export function TicketCard({ ticket, showQR = false, className }: TicketCardProps) {
   // Gracefully handle if ticket acts as registration object
   const event = ticket.event || (ticket as any);
-  const statusStr = ticket.status ? String(ticket.status).toLowerCase() : 'unknown';
 
   return (
     <div
@@ -48,9 +35,7 @@ export function TicketCard({ ticket, showQR = false, className }: TicketCardProp
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1E1E1E] via-black/40 to-transparent" />
           <div className="absolute bottom-3 left-4">
-            <Badge variant={statusVariantMap[ticket.status] || 'default'}>
-              {statusStr.charAt(0).toUpperCase() + statusStr.slice(1)}
-            </Badge>
+            <TicketStatusBadge status={ticket.status} />
           </div>
         </div>
       )}
@@ -111,9 +96,7 @@ export function TicketCard({ ticket, showQR = false, className }: TicketCardProp
             </div>
           )}
           {!event?.cover_image && (
-            <Badge variant={statusVariantMap[ticket.status] || 'default'}>
-              {statusStr.charAt(0).toUpperCase() + statusStr.slice(1)}
-            </Badge>
+            <TicketStatusBadge status={ticket.status} />
           )}
         </div>
       </div>

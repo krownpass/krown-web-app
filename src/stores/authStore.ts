@@ -55,9 +55,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const sessionId = get().sessionId ?? undefined;
-          const { token, refresh_token, user } = await authService.verifyOtp(phone, otp, sessionId);
+          const { token, user } = await authService.verifyOtp(phone, otp, sessionId);
           localStorage.setItem("krown_token", token);
-          if (refresh_token) localStorage.setItem("krown_refresh_token", refresh_token);
           localStorage.setItem("krown_user", JSON.stringify(user));
           set({ user, token, isAuthenticated: true, sessionId: null });
         } catch (err: unknown) {
@@ -72,9 +71,8 @@ export const useAuthStore = create<AuthState>()(
       signup: async (data) => {
         set({ isLoading: true, error: null });
         try {
-          const { token, refresh_token, user } = await authService.signup(data);
+          const { token, user } = await authService.signup(data);
           localStorage.setItem("krown_token", token);
-          if (refresh_token) localStorage.setItem("krown_refresh_token", refresh_token);
           localStorage.setItem("krown_user", JSON.stringify(user));
           set({ user, token, isAuthenticated: true });
         } catch (err: unknown) {

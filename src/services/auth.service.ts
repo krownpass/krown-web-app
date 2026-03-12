@@ -68,7 +68,7 @@ export const authService = {
     phone: string,
     otp: string,
     session_id?: string
-  ): Promise<{ token: string; refresh_token: string; user: User }> {
+  ): Promise<{ token: string; user: User }> {
     const formatted = phone.startsWith("+91") ? phone : `+91${phone}`;
     const deviceMeta = await getDeviceMetadata();
     
@@ -79,16 +79,16 @@ export const authService = {
       ...deviceMeta
     });
     const d = res.data.data ?? res.data;
-    return { token: d.token, refresh_token: d.refresh_token, user: mapUser(d.user ?? d) };
+    return { token: d.token, user: mapUser(d.user ?? d) };
   },
 
   // POST /api/auth/signup
-  async signup(data: SignupData): Promise<{ token: string; refresh_token: string; user: User }> {
+  async signup(data: SignupData): Promise<{ token: string; user: User }> {
     const deviceMeta = await getDeviceMetadata();
     const payload = { ...data, ...deviceMeta };
     const res = await api.post("/auth/signup", payload);
     const d = res.data.data ?? res.data;
-    return { token: d.token, refresh_token: d.refresh_token, user: mapUser(d.user ?? d) };
+    return { token: d.token, user: mapUser(d.user ?? d) };
   },
 
   // GET /api/users/me
@@ -100,13 +100,10 @@ export const authService = {
 
   // POST /api/auth/logout
   async logout(): Promise<void> {
-    const refreshToken = typeof window !== "undefined"
-      ? localStorage.getItem("krown_refresh_token")
-      : null;
-    await api.post("/auth/logout", { refresh_token: refreshToken }).catch(() => {});
+    // No body needed — server reads krown_rt HttpOnly cookie automatically
+    await api.post("/auth/logout", {}).catch(() => {});
     if (typeof window !== "undefined") {
       localStorage.removeItem("krown_token");
-      localStorage.removeItem("krown_refresh_token");
       localStorage.removeItem("krown_user");
     }
   },
@@ -115,7 +112,6 @@ export const authService = {
     await api.delete("/auth/account");
     if (typeof window !== "undefined") {
       localStorage.removeItem("krown_token");
-      localStorage.removeItem("krown_refresh_token");
       localStorage.removeItem("krown_user");
     }
   },

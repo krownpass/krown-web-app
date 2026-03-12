@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const { login, isLoading } = useAuthStore();
   const router = useRouter();
+  const submittingRef = React.useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +21,15 @@ export default function LoginPage() {
       toast.error('Enter a valid 10-digit mobile number');
       return;
     }
+    if (submittingRef.current) return;   // prevent double-send
+    submittingRef.current = true;
     try {
       await login(phone);
       router.push(`/verify-otp?phone=${phone}`);
     } catch {
       toast.error('Failed to send OTP. Please try again.');
+    } finally {
+      submittingRef.current = false;
     }
   };
 

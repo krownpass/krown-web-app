@@ -67,12 +67,13 @@ export interface Ticket {
   user_id: string;
   ticket_number: string;
   qr_code: string;
-  status: 'active' | 'used' | 'cancelled' | 'refunded';
+  /** DB registration_status enum values */
+  status: 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'REJECTED' | 'CANCELLED';
   seat_number?: string;
   ticket_type?: string;
   amount_paid?: number;
   registered_at: string;
-  event?: Event;
+  event?: Event & { end_time?: string; event_status?: string };
 }
 
 export interface EventRegistration {

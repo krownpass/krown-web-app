@@ -21,6 +21,7 @@ function processQueue(error: AxiosError | null, token: string | null = null) {
 const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api`,
   timeout: 15000,
+  withCredentials: true,   // send HttpOnly cookies on every request
   headers: {
     "Content-Type": "application/json",
   },
@@ -64,19 +65,15 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = localStorage.getItem("krown_refresh_token");
-        if (!refreshToken) throw new Error("No refresh token");
+        // Cookie (krown_rt) is sent automatically via withCredentials — no localStorage needed
+        const response = await axios.post(
+          `${API_URL}/api/auth/users/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
 
-        // Real endpoint from RN app
-        const response = await axios.post(`${API_URL}/api/auth/users/refresh-token`, {
-          refresh_token: refreshToken,
-        });
-
-        const { token, refresh_token } = response.data.data ?? response.data;
+        const { token } = response.data.data ?? response.data;
         localStorage.setItem("krown_token", token);
-        if (refresh_token) {
-          localStorage.setItem("krown_refresh_token", refresh_token);
-        }
 
         api.defaults.headers.common.Authorization = `Bearer ${token}`;
         if (originalRequest.headers) {
@@ -88,7 +85,6 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError as AxiosError, null);
         localStorage.removeItem("krown_token");
-        localStorage.removeItem("krown_refresh_token");
         localStorage.removeItem("krown_user");
         // Clear Zustand persisted auth state so isAuthenticated resets to false
         localStorage.removeItem("krown-auth");

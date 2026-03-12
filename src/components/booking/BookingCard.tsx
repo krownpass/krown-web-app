@@ -5,9 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, Clock, Users, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatTime, formatTimeSlot } from '@/lib/utils';
 import { BookingStatusBadge } from './BookingStatusBadge';
-import { formatTime } from '@/lib/utils';
 import type { Booking } from '@/types/booking';
 
 interface BookingCardProps {
@@ -26,7 +25,7 @@ export function BookingCard({ booking, onCancel, className, isEvent = false }: B
   const image = cafe?.cover_image ?? event?.cover_image;
   const location = cafe?.address ?? (event ? event.venue_name : '');
   const dateStr = event ? event.start_time : booking.date;
-  const timeSlot = isEvent ? (event?.start_time ? formatTime(event.start_time) : '') : booking.time_slot;
+  const timeSlot = isEvent ? (event?.start_time ? formatTime(event.start_time) : '') : formatTimeSlot(booking.time_slot);
   const guestCount = isEvent ? booking.ticket_count || 1 : booking.guest_count;
   const id = isEvent ? booking.ticket_id : booking.booking_id;
   const linkHref = isEvent ? `/events/my-tickets/${booking.event_id}` : `/bookings/${id}`;

@@ -14,6 +14,8 @@ export default function VerifyOtpPage() {
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const sendingRef = useRef(false);
+  const verifyingRef = useRef(false);
   const { verifyOtp, login, isLoading } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,6 +57,8 @@ export default function VerifyOtpPage() {
   };
 
   const handleVerify = useCallback(async (code: string) => {
+    if (verifyingRef.current) return;   // prevent paste+change double-fire
+    verifyingRef.current = true;
     try {
       await verifyOtp(phone, code);
       toast.success('Welcome to Krown!');
@@ -68,10 +72,14 @@ export default function VerifyOtpPage() {
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
+    } finally {
+      verifyingRef.current = false;
     }
   }, [verifyOtp, phone, router]);
 
   const handleResend = async () => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     try {
       await login(phone);
       setCountdown(60);
@@ -79,6 +87,8 @@ export default function VerifyOtpPage() {
       toast.success('OTP resent!');
     } catch {
       toast.error('Failed to resend OTP.');
+    } finally {
+      sendingRef.current = false;
     }
   };
 
