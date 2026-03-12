@@ -45,6 +45,12 @@ function EventsContent() {
     };
   }, [rawEvents]);
 
+  const topUpcoming = useMemo(() => {
+    return [...allUpcoming]
+      .sort((a, b) => (b.confirmed_registrations || b.current_registrations || 0) - (a.confirmed_registrations || a.current_registrations || 0))
+      .slice(0, 5);
+  }, [allUpcoming]);
+
   // Carousel events: deduplicated unique events for the top carousel
   const carouselEvents = useMemo(() => {
     const seen = new Set<string>();
@@ -349,20 +355,20 @@ function EventsContent() {
       )}
 
       {/* ═══════════════════════════════════════════════════════
-          4. YOUR EXCLUSIVE — Past/special events
+          4. YOUR EXCLUSIVE — Top registered upcoming events
          ═══════════════════════════════════════════════════════ */}
-      {allPast.length > 0 && (
+      {topUpcoming.length > 0 && (
         <section className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 pb-20">
           <div className="border-t border-white/[0.06] pt-10">
             <div className="flex items-center gap-3 mb-2">
               <Sparkles size={18} className="text-[#800020]" />
               <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white">Your Exclusive</h2>
             </div>
-            <p className="text-white/40 text-sm mb-8">Events that made waves — relive the highlights</p>
+            <p className="text-white/40 text-sm mb-8">Top registered upcoming events you can't miss</p>
 
             <div className="flex gap-5 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
               <AnimatePresence mode="popLayout">
-                {allPast.slice(0, exclusiveLimit).map((event, i) => (
+                {topUpcoming.map((event, i) => (
                   <motion.div 
                     layout
                     key={event.event_id} 
@@ -375,29 +381,6 @@ function EventsContent() {
                     <EventCardCompact event={event} className="h-full" />
                   </motion.div>
                 ))}
-                {(exclusiveLimit < allPast.length || hasNextPage) && (
-                  <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-none w-[160px] md:w-[200px] flex items-stretch py-2 pr-4">
-                    <button 
-                      onClick={() => {
-                        setExclusiveLimit(prev => prev + 15);
-                        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-                      }}
-                      disabled={isFetchingNextPage}
-                      className="w-full min-h-[300px] flex flex-col items-center justify-center gap-3 bg-[#111] border border-white/[0.05] rounded-2xl hover:border-[#800020]/40 transition-colors group"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#800020]/20 group-hover:scale-110 transition-all">
-                        {isFetchingNextPage ? (
-                          <div className="w-5 h-5 rounded-full border-2 border-[#800020] border-t-transparent animate-spin" />
-                        ) : (
-                          <ChevronRight size={20} className="text-white/40 group-hover:text-[#800020]" />
-                        )}
-                      </div>
-                      <span className="text-sm font-medium text-white/60 group-hover:text-white transition-colors">
-                        {isFetchingNextPage ? 'Loading...' : 'See More'}
-                      </span>
-                    </button>
-                  </motion.div>
-                )}
               </AnimatePresence>
             </div>
           </div>
