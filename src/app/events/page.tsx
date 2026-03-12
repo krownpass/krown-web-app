@@ -83,7 +83,7 @@ function EventsContent() {
       {/* Featured hero */}
       {featuredEvent && (
         <div className="relative w-full h-[45vh] md:h-[60vh] max-h-[800px] bg-[#0A0A0A]">
-          <Image 
+          <Image quality={90} 
             src={featuredEvent.cover_image ?? '/placeholder-event.jpg'} 
             alt={featuredEvent.title} 
             fill 

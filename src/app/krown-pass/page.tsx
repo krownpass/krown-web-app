@@ -14,6 +14,7 @@ import {
   Zap, Headphones, ArrowLeft, ChevronRight 
 } from 'lucide-react';
 import { KROWN_PASS_BENEFITS } from '@/lib/constants';
+import { AuthModal } from '@/components/modals/AuthModal';
 
 const iconMap: Record<string, React.ReactNode> = {
   Percent: <Percent size={24} />,
@@ -26,11 +27,26 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export default function KrownPassPage() {
   const router = useRouter();
-  const { token } = useAuthStore();
+  const { token, isAuthenticated } = useAuthStore();
   const [redirecting, setRedirecting] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { data: profile, isLoading: profileLoading } = useProfile();
   const [activePlans, setActivePlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Force login check on mount
+  useEffect(() => {
+    if (isMounted) {
+      if (!isAuthenticated && !token) {
+        setShowAuthModal(true);
+      }
+    }
+  }, [isMounted, isAuthenticated, token]);
 
   useEffect(() => {
     if (profile?.has_krown_pass) {
@@ -43,7 +59,12 @@ export default function KrownPassPage() {
     }
   }, [profile?.has_krown_pass]);
 
-  const handleManageMembership = async () => {
+  const handleManageMembership = async (forceToken?: string) => {
+    const currentToken = forceToken || token;
+    if (!isAuthenticated && !currentToken) {
+      setShowAuthModal(true);
+      return;
+    }
     if (redirecting) return;
     setRedirecting(true);
 
@@ -54,13 +75,13 @@ export default function KrownPassPage() {
       const currentUrl = encodeURIComponent(window.location.href);
       let targetUrl = `${WEB_DOMAIN}/plans?source=web&redirect_url=${currentUrl}`;
       
-      if (token) {
+      if (currentToken) {
         try {
           const res = await fetch(`${API_BASE_URL}/api/auth/web-login-token`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${currentToken}`,
             },
           });
           
@@ -82,7 +103,9 @@ export default function KrownPassPage() {
     }
   };
 
-  if (profileLoading || loadingPlans) {
+  if (!isMounted) return null;
+
+  if (isAuthenticated && (profileLoading || loadingPlans)) {
     return (
       <div className="min-h-screen bg-[#0B0B0B] text-[#D4AF37] flex flex-col items-center justify-center">
         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
@@ -94,7 +117,7 @@ export default function KrownPassPage() {
   }
 
   // Active User UI
-  if (profile?.has_krown_pass && activePlans.length > 0) {
+  if (isAuthenticated && profile?.has_krown_pass && activePlans.length > 0) {
     return (
       <div className="min-h-dvh bg-[#0B0B0B] text-white pb-10 selection:bg-[#800020] selection:text-white relative overflow-x-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#D4AF37]/10 rounded-full blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
@@ -233,7 +256,7 @@ export default function KrownPassPage() {
             </p>
 
             <motion.button
-              onClick={handleManageMembership}
+              onClick={() => handleManageMembership()}
               disabled={redirecting}
 
               whileHover={{ scale: 1.02 }}
@@ -345,7 +368,7 @@ export default function KrownPassPage() {
             Secure your Krown Pass today and redefine your social experiences. Available exclusively through our official portal.
           </p>
           <button
-            onClick={handleManageMembership}
+            onClick={() => handleManageMembership()}
             disabled={redirecting}
 
             className="inline-flex items-center gap-2 bg-white text-black px-10 py-5 rounded-full font-bold text-lg hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all duration-300"
@@ -354,6 +377,24 @@ export default function KrownPassPage() {
           </button>
         </div>
       </section>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          // Only redirect if they explicitly press Close/Back and didn't log in
+          setTimeout(() => {
+            if (!useAuthStore.getState().isAuthenticated) {
+              router.push('/');
+            }
+          }, 100);
+        }}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          // Don't auto-redirect, let the UI update to show active ticket or marketing page
+          // so they can choose to proceed with "Explore Pricing" manually again if they want to
+        }}
+      />
     </div>
   );
 }

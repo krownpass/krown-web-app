@@ -38,7 +38,7 @@ export function BookingCard({ booking, onCancel, className, isEvent = false }: B
           {/* Image */}
           <div className="relative w-full sm:w-[35%] h-[180px] sm:h-auto min-h-[160px] overflow-hidden shrink-0">
             {image ? (
-              <Image 
+              <Image quality={90} 
                 src={image} 
                 alt={name} 
                 fill 

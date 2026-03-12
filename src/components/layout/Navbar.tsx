@@ -56,7 +56,7 @@ export function Navbar() {
         {/* Left: Logo */}
         <Link href="/" className="flex items-center gap-4 group">
           <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-500 shadow-[0_0_20px_rgba(212,175,55,0.1)]">
-            <Image src="/krown-icon.png" alt="Krown" fill className="object-cover" />
+            <Image quality={90} src="/krown-icon.png" alt="Krown" fill className="object-cover" />
           </div>
           <span className="font-playfair text-2xl font-bold tracking-[0.2em] text-white">
             KROWN

@@ -30,7 +30,7 @@ export function Avatar({ src, name, size = 'md', className }: AvatarProps) {
       style={{ width: px, height: px }}
     >
       {src ? (
-        <Image
+        <Image quality={90}
           src={src}
           alt={name ?? 'Avatar'}
           width={px}

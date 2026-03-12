@@ -48,7 +48,7 @@ export function StoriesRow({ stories = defaultStories }: { stories?: Story[] }) 
               }`}
             >
               <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-[#0A0A0A]">
-                <Image src={story.image} alt={story.label} fill className="object-cover" sizes="56px" />
+                <Image quality={90} src={story.image} alt={story.label} fill className="object-cover" sizes="56px" />
               </div>
             </div>
             <span className="text-[10px] text-white/60 max-w-[56px] text-center truncate">
@@ -75,7 +75,7 @@ export function StoriesRow({ stories = defaultStories }: { stories?: Story[] }) 
               className="relative w-full max-w-sm aspect-[9/16] rounded-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <Image src={activeStory.image} alt={activeStory.label} fill className="object-cover" sizes="384px" />
+              <Image quality={90} src={activeStory.image} alt={activeStory.label} fill className="object-cover" sizes="384px" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <button
                 onClick={() => setActiveStory(null)}

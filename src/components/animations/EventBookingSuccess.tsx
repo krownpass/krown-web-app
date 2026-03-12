@@ -246,7 +246,7 @@ export function EventBookingSuccess({
                 ease: 'easeInOut',
               }}
             >
-              <Image
+              <Image quality={90}
                 src="/krown-icon.png"
                 alt="Krown"
                 width={96}

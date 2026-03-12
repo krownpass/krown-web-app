@@ -39,7 +39,7 @@ export function TicketCard({ ticket, showQR = false, className }: TicketCardProp
       {/* Event image header */}
       {event?.cover_image && (
         <div className="relative h-36 overflow-hidden">
-          <Image
+          <Image quality={90}
             src={event.cover_image}
             alt={event.title ?? 'Event'}
             fill

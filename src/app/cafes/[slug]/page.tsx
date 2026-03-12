@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { getDistance, getPriceRange, formatCurrency } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
+import { AuthModal } from '@/components/modals/AuthModal';
 
 const TABS = [
   { label: 'Overview', value: 'about' },
@@ -34,6 +35,8 @@ export default function CafeDetailPage() {
   const [activeTab, setActiveTab] = useState('about');
   const [imgIndex, setImgIndex] = useState(0);
   const [expandedMenuImg, setExpandedMenuImg] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'bookmark' | 'reserve' | 'redeem' | null>(null);
 
   const { data: cafe, isLoading } = useCafeDetail(params.slug);
   const { data: menu = [] } = useCafeMenu(cafe?.cafe_id ?? '');
@@ -52,7 +55,8 @@ export default function CafeDetailPage() {
 
   const toggleBookmark = () => {
     if (!isAuthenticated) {
-      toast.error('Please sign in to save cafes');
+      setPendingAction('bookmark');
+      setShowAuthModal(true);
       return;
     }
     if (!cafe?.cafe_id || isTogglingBookmark) return;
@@ -117,6 +121,7 @@ export default function CafeDetailPage() {
                 src={images[imgIndex]}
                 alt={cafe.name}
                 fill
+                quality={90}
                 className="object-cover"
                 priority
                 sizes="100vw"
@@ -333,7 +338,7 @@ export default function CafeDetailPage() {
                       {redeemableItems.map((item: { item_id: string, image_url?: string, name: string, price: number }) => (
                         <div key={item.item_id} className="snap-start flex-none w-[140px] md:w-[160px] group cursor-pointer">
                           <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#111] border border-white/5 mb-3">
-                             <Image 
+                             <Image quality={90}
                                src={item.image_url ?? "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=80"}
                                alt={item.name}
                                fill
@@ -398,7 +403,7 @@ export default function CafeDetailPage() {
                         className="col-span-1 md:col-span-2 h-[220px] md:h-[400px] relative rounded-2xl overflow-hidden bg-[#1A1A1A] cursor-pointer group"
                         onClick={() => setActiveTab('gallery')}
                       >
-                        <Image 
+                        <Image quality={90}
                           src={allImages[0]} 
                           alt="Gallery 1" 
                           fill 
@@ -415,7 +420,7 @@ export default function CafeDetailPage() {
                             className="relative w-full flex-1 md:h-auto rounded-2xl overflow-hidden bg-[#1A1A1A] cursor-pointer group"
                             onClick={() => setActiveTab('gallery')}
                           >
-                            <Image 
+                            <Image quality={90} 
                               src={img} 
                               alt={`Gallery ${idx + 2}`} 
                               fill 
@@ -443,7 +448,7 @@ export default function CafeDetailPage() {
                            className="snap-start flex-none w-[200px] md:w-[225px] group block"
                          >
                            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#111] mb-3">
-                             <Image 
+                             <Image quality={90}  
                                src={simCafe.cover_image ?? "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80"}
                                alt={simCafe.name}
                                fill
@@ -486,7 +491,7 @@ export default function CafeDetailPage() {
                       {redeemableItems.map((item: { item_id: string, image_url?: string, name: string, price: number }) => (
                         <div key={item.item_id} className="snap-start flex-none w-[140px] md:w-[160px] group cursor-pointer">
                           <div className="relative aspect-square rounded-2xl overflow-hidden bg-[#111] border border-white/5 mb-3">
-                             <Image 
+                             <Image quality={90}
                                src={item.image_url ?? "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=800&q=80"}
                                alt={item.name}
                                fill
@@ -513,7 +518,7 @@ export default function CafeDetailPage() {
                           onClick={() => setExpandedMenuImg(imgUrl)}
                           className="snap-start flex-none w-[200px] md:w-[240px] aspect-[3/4] relative rounded-2xl overflow-hidden bg-[#111] border border-white/10 group shadow-lg"
                         >
-                          <Image 
+                          <Image quality={90}
                             src={imgUrl} 
                             alt={`Menu page ${idx + 1}`} 
                             fill 
@@ -545,7 +550,7 @@ export default function CafeDetailPage() {
                            className="snap-start flex-none w-[200px] md:w-[225px] group block"
                          >
                            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-[#111] mb-3">
-                             <Image 
+                             <Image quality={90}
                                src={simCafe.cover_image ?? "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80"}
                                alt={simCafe.name}
                                fill
@@ -585,7 +590,7 @@ export default function CafeDetailPage() {
                 ) : (
                   allImages.map((img: string, i: number) => (
                     <div key={i} className={`relative ${i === 0 ? 'col-span-2 row-span-2 aspect-auto h-full' : 'aspect-square'} rounded-2xl overflow-hidden group`}>
-                      <Image 
+                      <Image quality={90} 
                         src={img} 
                         alt={`${cafe.name} ${i + 1}`} 
                         fill 
@@ -658,7 +663,7 @@ export default function CafeDetailPage() {
               className="relative w-full max-w-2xl aspect-[3/4] max-h-[85vh] rounded-2xl overflow-hidden cursor-default shadow-2xl shadow-black"
               onClick={e => e.stopPropagation()}
             >
-              <Image 
+              <Image quality={90} 
                 src={expandedMenuImg} 
                 alt="Expanded Menu" 
                 fill 
@@ -676,18 +681,32 @@ export default function CafeDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent blur-[2px]" />
         
         <div className="relative max-w-4xl mx-auto px-4 pb-8 pt-6 flex items-center gap-3 md:gap-5">
-          <Link
-            href={`/cafes/${params.slug}/book`}
+          <button
+            onClick={() => {
+              if (!isAuthenticated) {
+                setPendingAction('reserve');
+                setShowAuthModal(true);
+              } else {
+                router.push(`/cafes/${params.slug}/book`);
+              }
+            }}
             className="flex-1 relative overflow-hidden group flex items-center justify-center gap-2 bg-white text-black py-4 md:py-5 rounded-2xl font-bold tracking-wide transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] hover:shadow-[0_4px_25px_rgba(255,255,255,0.25)] active:scale-[0.98]"
           >
             <span className="relative z-10 flex items-center gap-2">Reserve Table</span>
             {/* Glossy light effect */}
             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-shimmer" />
-          </Link>
+          </button>
           
           <button
             disabled={redeemableItems.length === 0}
-            onClick={() => router.push(`/cafes/${params.slug}/redeem`)}
+            onClick={() => {
+              if (!isAuthenticated) {
+                setPendingAction('redeem');
+                setShowAuthModal(true);
+              } else {
+                router.push(`/cafes/${params.slug}/redeem`);
+              }
+            }}
             className="flex-1 relative overflow-hidden group flex items-center justify-center gap-2 bg-gradient-to-r from-[#800020] to-[#A00028] disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 md:py-5 rounded-2xl font-bold tracking-wide transition-all shadow-[0_4px_20px_rgba(128,0,32,0.3)] hover:shadow-[0_4px_25px_rgba(128,0,32,0.4)] active:scale-[0.98]"
           >
             <span className="relative z-10 flex items-center gap-2 drop-shadow-md">Redeem Drinks</span>
@@ -696,6 +715,21 @@ export default function CafeDetailPage() {
           </button>
         </div>
       </div>
+      
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingAction(null);
+        }}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          if (pendingAction === 'bookmark') toggleBookmark();
+          else if (pendingAction === 'reserve') router.push(`/cafes/${params.slug}/book`);
+          else if (pendingAction === 'redeem') router.push(`/cafes/${params.slug}/redeem`);
+          setPendingAction(null);
+        }}
+      />
     </div>
   );
 }

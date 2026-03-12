@@ -29,6 +29,7 @@ export function ImageWithFallback({
       src={imgSrc}
       alt={alt}
       onError={handleError}
+      quality={90}
     />
   );
 }

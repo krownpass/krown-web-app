@@ -84,7 +84,7 @@ export default function HomePage() {
             transition={{ duration: 20, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
             className="w-full h-full relative"
           >
-            <Image 
+            <Image quality={90} 
               src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=2400&q=80"
               alt="Premium Cafe Experience"
               fill
@@ -265,8 +265,8 @@ export default function HomePage() {
                   onClick={() => { setActiveStoryIndex(i); setActiveMediaIndex(0); }}
                   className="relative flex-none w-[280px] md:w-[320px] h-[400px] md:h-[460px] rounded-2xl overflow-hidden cursor-pointer group snap-center border border-white/5 bg-[#0A0A0A] shadow-2xl"
                 >
-                  <Image 
-                    src={story?.cover_img || 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800&q=80'} 
+                  <Image quality={90} 
+                    src={story?.cover_img || 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800&q=80'}
                     alt={story?.title || 'Story'}
                     fill
                     sizes="(max-width: 768px) 280px, 320px"
@@ -391,7 +391,7 @@ export default function HomePage() {
                 className="absolute inset-0 w-full h-full object-cover -z-10"
               />
             ) : (
-              <Image 
+              <Image quality={90} 
                 src={stories[activeStoryIndex]?.media?.[activeMediaIndex]?.uri || stories[activeStoryIndex]?.cover_img || 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800&q=80'} 
                 alt={stories[activeStoryIndex]?.title || 'Story segment'}
                 fill

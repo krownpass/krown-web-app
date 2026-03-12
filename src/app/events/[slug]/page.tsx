@@ -25,6 +25,7 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/queries/queryKeys';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { EventBookingSuccess } from '@/components/animations/EventBookingSuccess';
+import { AuthModal } from '@/components/modals/AuthModal';
 
 export default function EventDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -37,6 +38,8 @@ export default function EventDetailPage() {
   const [showAllThingsToKnow, setShowAllThingsToKnow] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [showBookingAnimation, setShowBookingAnimation] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'register' | 'waitlist' | 'bookmark' | null>(null);
 
   const handleBookingAnimationComplete = useCallback(() => {
     setShowBookingAnimation(false);
@@ -69,7 +72,8 @@ export default function EventDetailPage() {
 
   const toggleBookmark = () => {
     if (!isAuthenticated) {
-      toast.error('Please sign in to save events');
+      setPendingAction('bookmark');
+      setShowAuthModal(true);
       return;
     }
     if (!event?.event_id || isTogglingBookmark) return;
@@ -98,7 +102,8 @@ export default function EventDetailPage() {
 
   const handleRegister = async () => {
     if (!isAuthenticated) {
-      router.push(`/login?redirect=/events/${params.slug}`);
+      setPendingAction('register');
+      setShowAuthModal(true);
       return;
     }
     if (!event) return;
@@ -192,7 +197,11 @@ export default function EventDetailPage() {
     };
 
     const handleWaitlist = async () => {
-      if (!isAuthenticated) { router.push('/login'); return; }
+      if (!isAuthenticated) {
+        setPendingAction('waitlist');
+        setShowAuthModal(true);
+        return;
+      }
       if (!event) return;
       try {
         const res = await waitlistMutation.mutateAsync(event.event_id);
@@ -273,7 +282,7 @@ export default function EventDetailPage() {
       {/* ── Hero ── */}
       <div className="relative h-[420px] md:h-[520px] overflow-hidden">
         {event.cover_image ? (
-          <Image
+          <Image quality={90}
             src={event.cover_image}
             alt={event.title}
             fill
@@ -569,7 +578,7 @@ export default function EventDetailPage() {
                 const src = typeof img === 'string' ? img : (img as any).image_url || (img as any).url || (img as any).image;
                 return (
                   <div key={i} className="relative flex-shrink-0 w-44 h-44 rounded-2xl overflow-hidden group">
-                    <Image
+                    <Image quality={90}
                       src={src}
                       alt={`Gallery ${i + 1}`}
                       fill
@@ -746,6 +755,20 @@ export default function EventDetailPage() {
         </div>
       </div>
     </div>
+    <AuthModal
+      isOpen={showAuthModal}
+      onClose={() => {
+        setShowAuthModal(false);
+        setPendingAction(null);
+      }}
+      onSuccess={() => {
+        setShowAuthModal(false);
+        if (pendingAction === 'register') handleRegister();
+        else if (pendingAction === 'waitlist') handleWaitlist();
+        else if (pendingAction === 'bookmark') toggleBookmark();
+        setPendingAction(null);
+      }}
+    />
     </>
   );
 }

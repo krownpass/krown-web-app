@@ -91,7 +91,7 @@ export default function VerifyOtpPage() {
       >
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4">
-            <Image src="/krown-icon.png" alt="Krown" width={64} height={64} className="rounded-2xl" />
+            <Image quality={90} src="/krown-icon.png" alt="Krown" width={64} height={64} className="rounded-2xl" />
           </div>
           <h1 className="font-playfair text-2xl font-bold text-white">Verify OTP</h1>
           <p className="text-white/40 text-sm mt-1">

@@ -82,7 +82,7 @@ export default function TicketDetailPage() {
             <div ref={ticketRef} className="bg-[#1E1E1E] border border-[#2A2A2A] rounded-2xl overflow-hidden p-0 m-0">
                 {(ticket as any).event_cover_image && (
                   <div className="relative h-40">
-                    <Image src={(ticket as any).event_cover_image} alt={(ticket as any).event_title ?? ''} fill className="object-cover" sizes="448px" />
+                    <Image quality={90} src={(ticket as any).event_cover_image} alt={(ticket as any).event_title ?? ''} fill className="object-cover" sizes="448px" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1E1E1E] to-transparent" />
                   </div>
                 )}

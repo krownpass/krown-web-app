@@ -77,7 +77,7 @@ export default function BookingConfirmedPage() {
           >
             {booking.cafe?.cover_image && (
               <div className="relative h-32">
-                <Image src={booking.cafe.cover_image} alt={booking.cafe.name ?? ''} fill className="object-cover" sizes="384px" />
+                <Image quality={90} src={booking.cafe.cover_image} alt={booking.cafe.name ?? ''} fill className="object-cover" sizes="384px" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1E1E1E] to-transparent" />
               </div>
             )}

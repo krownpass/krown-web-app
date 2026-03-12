@@ -106,7 +106,7 @@ export default function BookCafePage() {
           >
             {cafe.cover_image && (
               <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                <Image src={cafe.cover_image} alt={cafe.name} fill className="object-cover" sizes="64px" />
+                <Image quality={90} src={cafe.cover_image} alt={cafe.name} fill className="object-cover" sizes="64px" />
               </div>
             )}
             <div>

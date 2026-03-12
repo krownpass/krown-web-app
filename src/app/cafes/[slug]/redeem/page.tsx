@@ -263,7 +263,7 @@ export default function RedeemDrinkPage() {
                 >
                   {item.image_url ? (
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                      <Image src={item.image_url} alt={item.name} fill className="object-cover" />
+                      <Image quality={90} src={item.image_url} alt={item.name} fill className="object-cover" />
                     </div>
                   ) : (
                     <div className="relative w-16 h-16 rounded-xl bg-[#2A2A2A] shrink-0 flex items-center justify-center text-white/20 text-xs">No img</div>

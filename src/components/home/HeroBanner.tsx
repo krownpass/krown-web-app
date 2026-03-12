@@ -71,7 +71,7 @@ export function HeroBanner({ slides = defaultSlides }: HeroBannerProps) {
           transition={{ duration: 0.8 }}
           className="absolute inset-0"
         >
-          <Image
+          <Image quality={90}
             src={slides[current].image}
             alt={slides[current].title}
             fill

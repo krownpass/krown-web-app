@@ -58,7 +58,7 @@ export function Sidebar() {
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-[#2A2A2A]">
               <div className="flex items-center gap-2">
-                <Image src="/krown-icon.png" alt="Krown" width={32} height={32} className="rounded-lg" />
+                <Image quality={90} src="/krown-icon.png" alt="Krown" width={32} height={32} className="rounded-lg" />
                 <span className="font-playfair text-2xl font-bold text-[#800020] tracking-wider">KROWN</span>
               </div>
               <button
