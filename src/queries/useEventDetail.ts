@@ -6,6 +6,7 @@ import { queryKeys } from '@/queries/queryKeys';
 import type { Event, Ticket, EventRegistration } from '@/types/event';
 import { STALE_TIME, GC_TIME } from '@/lib/constants';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
 
 const retryConfig = {
   retry: 3,
@@ -24,10 +25,11 @@ export function useEventDetail(slug: string) {
 }
 
 export function useUserRegistration(eventId: string | undefined) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery<any>({
     queryKey: ['event-registration', eventId],
     queryFn: () => eventId ? eventService.getUserRegistration(eventId) : null,
-    enabled: !!eventId,
+    enabled: !!eventId && isAuthenticated,
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
     retry: 1, // Only retry once since a 404 is a valid state if not registered

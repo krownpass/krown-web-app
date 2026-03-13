@@ -24,11 +24,18 @@ export const eventService = {
     return res.data.data ?? res.data;
   },
 
-  // GET /api/events — no /events/upcoming endpoint on server
+  // GET /api/events — filter out past events on frontend
   async getUpcomingEvents(): Promise<Event[]> {
     const res = await api.get("/events");
     const data = res.data.data ?? res.data;
-    return Array.isArray(data) ? data : data.events ?? [];
+    const allEvents = Array.isArray(data) ? data : data.events ?? [];
+    
+    // Filter out events that have ended
+    const now = new Date();
+    return allEvents.filter((event: Event) => {
+      const eventEnd = event.end_time ? new Date(event.end_time) : new Date(event.start_time);
+      return eventEnd > now || new Date(event.start_time) > now;
+    });
   },
 
   async getFeaturedEvents(): Promise<Event[]> {

@@ -15,7 +15,7 @@ import { useTransactions } from '@/queries/useUser';
 import { formatDate, formatTime, formatCurrency } from '@/lib/utils';
 import { format, isToday, isYesterday } from 'date-fns';
 
-type TxFilter = 'all' | 'dineout' | 'subscription' | 'events' | 'success' | 'initiated' | 'failure';
+type TxFilter = 'all' | 'dineout' | 'subscription' | 'events' | 'success' | 'initiated' | 'failure' | 'pending' | 'failed';
 
 // Helper to normalize status strings to UI presentation
 const normalizeStatus = (status: string) => {

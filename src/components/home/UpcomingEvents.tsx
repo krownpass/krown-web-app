@@ -9,7 +9,15 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useUpcomingEvents } from '@/queries/useEvents';
 
 export function UpcomingEvents() {
-  const { data: events = [], isLoading } = useUpcomingEvents();
+  const { data: rawEvents = [], isLoading } = useUpcomingEvents();
+  
+  const events = React.useMemo(() => {
+    return rawEvents.filter(e => {
+      // Ensure the event hasn't already finished or started way in the past if it has no end_time
+      const eventDate = new Date(e.end_time || e.start_time);
+      return eventDate > new Date() && e.status !== 'completed';
+    });
+  }, [rawEvents]);
 
   return (
     <section>
