@@ -16,6 +16,8 @@ export interface Event {
   venue_city?: string;
   venue_latitude?: number;
   venue_longitude?: number;
+  reveal_time?: string | null;
+  reveal_fields?: string[];
   is_paid: boolean;
   base_price?: number;
   max_capacity?: number;

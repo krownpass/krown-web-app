@@ -4,12 +4,23 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { EventCard } from '@/components/event/EventCard';
+import { EventCardCompact } from '@/components/event/EventCardCompact';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useUpcomingEvents } from '@/queries/useEvents';
 
 export function UpcomingEvents() {
-  const { data: events = [], isLoading } = useUpcomingEvents();
+  const { data: rawEvents = [], isLoading } = useUpcomingEvents();
+  
+  const events = React.useMemo(() => {
+    return rawEvents.filter(e => {
+      // Ensure the event hasn't already finished or started way in the past if it has no end_time
+      const eventDate = new Date(e.end_time || e.start_time);
+      return eventDate > new Date() && e.status !== 'completed';
+    });
+  }, [rawEvents]);
+
+  const displayEvents = events.slice(0, 10);
+  const hasMoreEvents = events.length > 10;
 
   return (
     <section>
@@ -32,17 +43,39 @@ export function UpcomingEvents() {
                 <Skeleton className="h-3 w-1/2" />
               </div>
             ))
-          : events.map((event, i) => (
-              <motion.div
-                key={event.event_id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="flex-shrink-0 w-72"
-              >
-                <EventCard event={event} />
-              </motion.div>
-            ))}
+          : (
+              <>
+                {displayEvents.map((event, i) => (
+                  <motion.div
+                    key={event.event_id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                    className="flex-shrink-0 w-[280px]"
+                  >
+                    <EventCardCompact event={event} />
+                  </motion.div>
+                ))}
+                {hasMoreEvents && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: displayEvents.length * 0.06 }}
+                    className="flex-shrink-0 w-[200px]"
+                  >
+                    <Link
+                      href="/events"
+                      className="group flex flex-col items-center justify-center gap-3 w-full h-full min-h-[320px] rounded-2xl border border-white/[0.06] bg-[#111] hover:bg-[#800020]/10 hover:border-[#800020]/40 transition-all duration-300"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-[#800020]/20 flex items-center justify-center group-hover:bg-[#800020] transition-colors duration-300">
+                        <ChevronRight size={24} className="text-[#800020] group-hover:text-white transition-colors duration-300" />
+                      </div>
+                      <span className="font-playfair font-bold text-white text-lg">Explore All</span>
+                    </Link>
+                  </motion.div>
+                )}
+              </>
+            )}
       </div>
     </section>
   );
