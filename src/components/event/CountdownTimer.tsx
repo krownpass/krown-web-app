@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface CountdownTimerProps {
   targetDate: string;
   className?: string;
+  label?: string;
+  completedText?: string;
+  onComplete?: () => void;
 }
 
 interface TimeLeft {
@@ -52,29 +55,48 @@ function FlipUnit({ value, label }: { value: number; label: string }) {
   );
 }
 
-export function CountdownTimer({ targetDate, className }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, className, label = 'Starts In', completedText = 'Event has started!', onComplete }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft(targetDate));
+  const [hasCompleted, setHasCompleted] = useState(false);
 
   useEffect(() => {
+    const diff = new Date(targetDate).getTime() - Date.now();
+    if (diff <= 0) {
+      if (!hasCompleted) {
+        setHasCompleted(true);
+        onComplete?.();
+      }
+      return;
+    }
+
     const interval = setInterval(() => {
-      setTimeLeft(getTimeLeft(targetDate));
+      const remaining = getTimeLeft(targetDate);
+      setTimeLeft(remaining);
+      
+      if (Object.values(remaining).every((v) => v === 0)) {
+        clearInterval(interval);
+        if (!hasCompleted) {
+          setHasCompleted(true);
+          onComplete?.();
+        }
+      }
     }, 1000);
     return () => clearInterval(interval);
-  }, [targetDate]);
+  }, [targetDate, hasCompleted, onComplete]);
 
-  const isOver = Object.values(timeLeft).every((v) => v === 0);
+  const isOver = Object.values(timeLeft).every((v) => v === 0) || hasCompleted;
 
   if (isOver) {
     return (
       <div className={className}>
-        <span className="text-sm text-[#C11E38] font-semibold">Event has started!</span>
+        <span className="text-sm text-[#C11E38] font-semibold">{completedText}</span>
       </div>
     );
   }
 
   return (
     <div className={className}>
-      <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Starts In</p>
+      <p className="text-xs text-white/40 uppercase tracking-widest mb-3">{label}</p>
       <div className="flex items-center gap-2">
         <FlipUnit value={timeLeft.days} label="Days" />
         <span className="text-2xl font-bold text-white/30 mb-4">:</span>

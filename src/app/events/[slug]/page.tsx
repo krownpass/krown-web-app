@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Heart, Share2, MapPin, Calendar, Clock,
   Users, ChevronDown, ChevronUp, Loader2, Crown, ExternalLink, CheckCircle, Ticket, Minus, Plus,
-  Info, Eye, EyeOff, ImageIcon, Navigation
+  Info, Eye, EyeOff, ImageIcon, Navigation, Lock
 } from 'lucide-react';
 import { useEventDetail, useRegisterForEvent, useJoinWaitlist, useUserRegistration } from '@/queries/useEventDetail';
 import { useEventBookmarks, useAddEventBookmark, useRemoveEventBookmark } from '@/queries/useUser';
@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/queries/queryKeys';
 import { useUserLocation } from '@/hooks/useUserLocation';
+import { useEventRoom } from '@/hooks/useWebSocket';
 import { EventBookingSuccess } from '@/components/animations/EventBookingSuccess';
 import { AuthModal } from '@/components/modals/AuthModal';
 
@@ -46,7 +47,44 @@ export default function EventDetailPage() {
     router.push('/events/my-tickets');
   }, [router]);
 
-  const { data: event, isLoading } = useEventDetail(params.slug);
+  const { data: initialEvent, isLoading } = useEventDetail(params.slug);
+  const roomData = useEventRoom(initialEvent?.event_id || '');
+
+  const event = React.useMemo(() => {
+    if (!initialEvent) return initialEvent;
+    
+    // Merge updates from websocket
+    const mergedEvent = { ...initialEvent, ...roomData.eventUpdates };
+    
+    if (roomData.registrationCount !== undefined) {
+      mergedEvent.current_registrations = roomData.registrationCount;
+    }
+    
+    return mergedEvent;
+  }, [initialEvent, roomData]);
+
+  const [hasRevealTimePassed, setHasRevealTimePassed] = useState(true);
+
+  // Use an effect to properly initialize hasRevealTimePassed when event loads
+  // Also keep it checking regularly if the time hasn't passed yet
+  React.useEffect(() => {
+    if (!event?.reveal_time) {
+      setHasRevealTimePassed(true);
+      return;
+    }
+
+    const checkTime = () => {
+      const isPassed = new Date(event.reveal_time).getTime() <= Date.now();
+      setHasRevealTimePassed(isPassed);
+      return isPassed;
+    };
+
+    if (checkTime()) return;
+
+    const interval = setInterval(checkTime, 1000);
+    return () => clearInterval(interval);
+  }, [event?.reveal_time]);
+
   const { data: userRegistration } = useUserRegistration(event?.event_id);
   const registerMutation = useRegisterForEvent();
   const waitlistMutation = useJoinWaitlist();
@@ -247,7 +285,9 @@ export default function EventDetailPage() {
   const hasMaxedOut = remainingAllowance === 0 && hasBookedTickets;
   const isSoldOut = overallAvailable === 0;
 
-  const isRevealed = event.is_revealed !== false;
+  const isRevealed = event.reveal_time 
+    ? hasRevealTimePassed 
+    : event.is_revealed !== false;
 
   const eventLat = event.venue_latitude ?? (event as any).latitude;
   const eventLng = event.venue_longitude ?? (event as any).longitude;
@@ -280,54 +320,64 @@ export default function EventDetailPage() {
     <EventBookingSuccess show={showBookingAnimation} onComplete={handleBookingAnimationComplete} />
     <div className="min-h-screen bg-[#0A0A0A] pb-36">
       {/* ── Hero ── */}
-      <div className="relative h-[420px] md:h-[520px] overflow-hidden">
-        {event.cover_image ? (
-          <Image quality={90}
-            src={event.cover_image}
-            alt={event.title}
-            fill
-            className="object-cover scale-[1.02]"
-            priority
-            sizes="100vw"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1A0A10] via-[#0A0A0A] to-[#0A0A1A]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/50 to-black/10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/20 to-transparent" />
+      <div className="relative h-[65vh] md:h-[75vh] min-h-[500px] overflow-hidden">
+        <motion.div 
+          className="absolute inset-0"
+          initial={{ scale: 1.05 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+        >
+          {event.cover_image ? (
+            <Image quality={100}
+              src={event.cover_image}
+              alt={event.title}
+              fill
+              className="object-cover"
+              priority
+              sizes="100vw"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#10080C] via-[#0A0A0A] to-[#0A0A10]" />
+          )}
+        </motion.div>
+        
+        {/* Seamless fade to black */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#0A0A0A] opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent h-1/2 top-auto" />
 
         {/* Floating Nav */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="absolute top-0 left-0 right-0 p-5 flex justify-between items-center z-10"
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          className="absolute top-0 left-0 right-0 max-w-4xl mx-auto p-5 md:p-8 flex justify-between items-center z-20"
         >
           <button
             onClick={() => router.back()}
-            className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300"
+            className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center justify-center text-white hover:bg-black/60 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={18} strokeWidth={2} />
           </button>
-          <div className="flex gap-2.5">
+          <div className="flex gap-3">
             <button
               onClick={toggleBookmark}
               disabled={isTogglingBookmark}
-              className={`w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center transition-all duration-300 ${
-                isTogglingBookmark ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'
+              className={`w-11 h-11 rounded-full bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center justify-center transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.5)] ${
+                isTogglingBookmark ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/60 hover:scale-105 active:scale-95'
               }`}
             >
               <Heart
                 size={18}
+                strokeWidth={isBookmarked ? 0 : 2}
                 fill={isBookmarked ? '#C11E38' : 'none'}
-                className={`transition-colors duration-300 ${isBookmarked ? 'text-[#C11E38]' : 'text-white'}`}
+                className={isBookmarked ? 'text-[#C11E38]' : 'text-white'}
               />
             </button>
             <button
               onClick={handleShare}
-              className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300"
+              className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-3xl border border-white/10 flex items-center justify-center text-white hover:bg-black/60 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
             >
-              <Share2 size={18} />
+              <Share2 size={18} strokeWidth={2} />
             </button>
           </div>
         </motion.div>
@@ -339,7 +389,7 @@ export default function EventDetailPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.3 }}
             onClick={() => router.push(`/events/my-tickets/${event.event_id}`)}
-            className="absolute bottom-6 right-6 z-20 px-5 py-2.5 rounded-2xl bg-white/15 backdrop-blur-xl border border-white/[0.12] text-white flex items-center gap-2.5 text-sm font-medium shadow-2xl hover:bg-white/25 transition-all duration-300"
+            className="absolute top-24 right-5 md:right-8 z-20 px-5 py-2.5 rounded-full bg-black/40 backdrop-blur-3xl border border-white/10 text-white flex items-center gap-2.5 text-sm font-medium shadow-[0_4px_30px_rgba(0,0,0,0.5)] hover:bg-black/60 transition-all duration-300"
           >
             {isRegistrationConfirmed ? <Ticket size={16} /> : <Clock size={16} />}
             {isRegistrationConfirmed ? 'View Tickets' : 'Confirming...'}
@@ -347,24 +397,42 @@ export default function EventDetailPage() {
         )}
 
         {/* Hero bottom overlay — title & badges */}
-        <div className="absolute bottom-0 left-0 right-0 px-5 pb-7 md:px-8">
+        <div className="absolute bottom-0 left-0 right-0 px-5 pb-8 md:px-8 z-10">
           <div className="max-w-3xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
             >
-              <div className="flex flex-wrap gap-2 mb-4">
-                {event.category && <Badge variant="default" className="backdrop-blur-sm bg-white/20 text-white border-white/20">{event.category}</Badge>}
-                {event.tags?.map((t) => <Badge key={t} variant="default" className="backdrop-blur-sm">{t}</Badge>)}
-                {event.event_type && event.event_type !== 'OPEN' && (
-                  <Badge variant={isMembersOnlyType ? 'gold' : 'burgundy'} className="backdrop-blur-sm">{getEventTypeLabel()}</Badge>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-4 text-[13px] font-medium tracking-wide">
+                {event.category && (
+                  <span className="text-white/70 uppercase tracking-[0.2em] font-medium">{event.category}</span>
                 )}
-                {!event.is_paid && <Badge variant="success" className="backdrop-blur-sm">Free Entry</Badge>}
-                {isRegistrationOpen && !isFull && <Badge variant="success" className="backdrop-blur-sm">Open</Badge>}
-                {isFull && <Badge variant="error" className="backdrop-blur-sm">Full</Badge>}
+                
+                {event.category && event.event_type && event.event_type !== 'OPEN' && (
+                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                )}
+                
+                {event.event_type && event.event_type !== 'OPEN' && (
+                  <span className={isMembersOnlyType ? 'text-[#D4AF37]' : 'text-[#C11E38]'}>
+                    {getEventTypeLabel()}
+                  </span>
+                )}
+
+                {((!event.is_paid) || isFull) && (
+                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                )}
+
+                {!event.is_paid && (
+                  <span className="text-emerald-400">Free Entry</span>
+                )}
+
+                {isFull && (
+                  <span className="text-red-400">Sold Out</span>
+                )}
               </div>
-              <h1 className="font-playfair text-3xl md:text-5xl font-bold text-white leading-[1.08] tracking-tight">
+              
+              <h1 className="font-playfair text-4xl md:text-6xl lg:text-7xl font-semibold text-white leading-[1.05] tracking-tight mb-2 drop-shadow-lg">
                 {event.title}
               </h1>
             </motion.div>
@@ -373,113 +441,120 @@ export default function EventDetailPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="max-w-3xl mx-auto px-5 md:px-8">
+      <div className="max-w-4xl mx-auto px-5 md:px-8 mt-6 relative z-20">
 
-        {/* Countdown */}
-        {event.start_time && new Date(event.start_time) > new Date() && (
+        {/* Reveal Timer if Secret Location Event */}
+        {!isRevealed && event.reveal_time && new Date(event.reveal_time) > new Date() && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3, type: "spring", stiffness: 100 }}
+            className="mb-8 flex justify-center"
           >
-            <CountdownTimer targetDate={event.start_time} />
-          </motion.div>
-        )}
-
-        {/* Quick Info Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8"
-        >
-          {/* Date & Time */}
-          <div className="relative overflow-hidden rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5 hover:bg-white/[0.06] transition-all duration-500">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[#800020]/15 flex items-center justify-center flex-shrink-0">
-                <Calendar size={18} className="text-[#C11E38]" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-white font-medium text-[15px]">{formatDate(event.start_time)}</p>
-                <p className="text-white/40 text-sm mt-0.5">
-                  {formatTime(event.start_time)}{event.end_time ? ` – ${formatTime(event.end_time)}` : ''}
-                </p>
-                {event.gates_open_time && (
-                  <p className="text-white/25 text-xs mt-1.5">Gates open {formatTime(event.gates_open_time)}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Venue */}
-          {isRevealed && event.venue_name ? (
-            <a
-              href={`https://maps.google.com/?q=${encodeURIComponent(event.venue_name + (event.venue_city ? `, ${event.venue_city}` : ''))}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative overflow-hidden rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5 hover:bg-white/[0.06] hover:border-[#800020]/25 transition-all duration-500"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#800020]/15 flex items-center justify-center flex-shrink-0">
-                  <MapPin size={18} className="text-[#C11E38]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-[15px] truncate">
-                    {event.venue_name}{event.venue_city ? `, ${event.venue_city}` : ''}
-                  </p>
-                  <p className="text-white/40 text-sm mt-0.5 truncate">
-                    {venueDistance
-                      ? `${venueDistance.toFixed(1)} km away · View on map`
-                      : event.venue_address || 'View on map'}
-                  </p>
-                </div>
-                <ExternalLink size={14} className="text-white/20 group-hover:text-white/50 flex-shrink-0 mt-1 transition-colors duration-300" />
-              </div>
-            </a>
-          ) : !isRevealed ? (
-            <div className="relative overflow-hidden rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#800020]/15 flex items-center justify-center flex-shrink-0">
-                  <EyeOff size={18} className="text-[#C11E38]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-[15px]">Venue will be revealed soon!</p>
-                  <p className="text-white/40 text-sm mt-0.5">Stay tuned</p>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </motion.div>
-
-        {/* Capacity */}
-        {event.max_capacity && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-6"
-          >
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Users size={15} className="text-white/40" />
-                  <span className="text-white/50 text-sm">
-                    {event.current_registrations ?? 0} / {event.max_capacity}
-                  </span>
-                </div>
-                <span className={`text-sm font-semibold ${isFull ? 'text-red-400' : capacityPercent > 80 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  {isFull ? 'Sold Out' : `${event.seats_left ?? (event.max_capacity - (event.current_registrations ?? 0))} spots left`}
-                </span>
-              </div>
-              <ProgressBar
-                value={capacityPercent}
-                color={capacityPercent > 80 ? '#EF4444' : '#800020'}
-                height={4}
+            <div className="inline-block p-1 rounded-full bg-gradient-to-r from-transparent via-[#C11E38]/20 to-transparent">
+              <CountdownTimer 
+                targetDate={event.reveal_time} 
+                label="Location Reveals In" 
+                completedText="Unlocking location..." 
+                onComplete={() => setHasRevealTimePassed(true)} 
               />
             </div>
           </motion.div>
         )}
+
+        {/* Info & Availability Glass Panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="bg-white/[0.03] backdrop-blur-3xl rounded-[32px] border border-white/[0.08] p-2 flex flex-col drop-shadow-2xl"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {/* Date & Time */}
+            <div className="rounded-[24px] bg-black/20 p-6 flex flex-col justify-center transition-colors duration-500 hover:bg-black/40">
+              <div className="flex items-start gap-5">
+                <div className="w-12 h-12 rounded-full bg-white/[0.05] flex items-center justify-center flex-shrink-0">
+                  <Calendar size={20} strokeWidth={1.5} className="text-white/80" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-white/90 font-medium text-[16px] tracking-wide">{formatDate(event.start_time)}</p>
+                  <p className="text-white/50 text-[14px] mt-1 font-light tracking-wide">
+                    {formatTime(event.start_time)}{event.end_time ? ` – ${formatTime(event.end_time)}` : ''}
+                  </p>
+                  {event.gates_open_time && (
+                    <p className="text-[#D4AF37]/80 text-[11px] uppercase tracking-[0.1em] mt-3 font-semibold">Gates Open {formatTime(event.gates_open_time)}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Venue */}
+            {isRevealed && event.venue_name ? (
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(event.venue_name + (event.venue_city ? `, ${event.venue_city}` : ''))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-[24px] bg-black/20 p-6 flex flex-col justify-center transition-all duration-500 hover:bg-black/40 relative overflow-hidden"
+              >
+                <div className="flex items-start gap-5 relative z-10">
+                  <div className="w-12 h-12 rounded-full bg-white/[0.05] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors">
+                    <MapPin size={20} strokeWidth={1.5} className="text-white/80" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white/90 font-medium text-[16px] tracking-wide truncate">
+                      {event.venue_name}{event.venue_city ? `, ${event.venue_city}` : ''}
+                    </p>
+                    <p className="text-white/50 text-[14px] mt-1 font-light truncate tracking-wide">
+                      {venueDistance ? `${venueDistance.toFixed(1)} km away` : event.venue_address || 'View on map'}
+                    </p>
+                  </div>
+                  <ExternalLink size={16} strokeWidth={1.5} className="text-white/20 group-hover:text-white/60 transition-colors" />
+                </div>
+              </a>
+            ) : !isRevealed && event.reveal_time ? (
+              <div className="relative rounded-[24px] bg-black/20 p-6 flex flex-col justify-center overflow-hidden">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[#C11E38] opacity-[0.08] blur-[40px] pointer-events-none rounded-full"></div>
+                
+                <div className="flex items-center gap-5 relative z-10">
+                  <div className="w-12 h-12 rounded-full bg-white/[0.05] border border-white/[0.05] flex items-center justify-center flex-shrink-0">
+                    <Crown size={20} strokeWidth={1.5} className="text-[#C11E38]/80" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white/90 font-medium text-[16px] font-playfair tracking-wider">Secret Location</p>
+                    <p className="text-white/50 text-[14px] mt-1 font-light flex items-center gap-2">
+                      <Lock size={12} className="text-[#C11E38]/80" /> Unlocking soon
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : !isRevealed ? (
+              <div className="rounded-[24px] bg-black/20 p-6 flex flex-col justify-center">
+                <div className="flex items-center gap-5">
+                  <div className="w-12 h-12 rounded-full bg-white/[0.05] flex items-center justify-center flex-shrink-0">
+                    <EyeOff size={20} strokeWidth={1.5} className="text-[#C11E38]/80" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white/90 font-medium text-[16px] tracking-wide">Venue TBA</p>
+                    <p className="text-white/50 text-[14px] mt-1 font-light tracking-wide">Stay tuned</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Availability Footer inline */}
+          {event.max_capacity && (
+            <div className="mt-2 rounded-[24px] bg-black/10 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Users size={16} strokeWidth={1.5} className="text-white/40" />
+                <span className="text-white/60 text-[14px] tracking-wide font-light">Availability</span>
+              </div>
+              <span className={`text-[14px] tracking-wide font-medium ${isFull ? 'text-red-400' : capacityPercent > 80 ? 'text-amber-400' : 'text-emerald-400/90'}`}>
+                {isFull ? 'Sold Out' : `${event.seats_left ?? (event.max_capacity - (event.current_registrations ?? 0))} spots remaining`}
+              </span>
+            </div>
+          )}
+        </motion.div>
 
         {/* About */}
         {event.description && (
@@ -487,16 +562,16 @@ export default function EventDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.45 }}
-            className="mt-8"
+            className="mt-12"
           >
-            <h3 className="text-white/30 text-xs font-semibold uppercase tracking-[0.15em] mb-4">About</h3>
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-5">
+            <h3 className="text-white/40 text-[11px] font-semibold uppercase tracking-[0.2em] mb-4">About</h3>
+            <div className="rounded-[24px] bg-white/[0.02] border border-white/[0.05] p-6 md:p-8 backdrop-blur-xl">
               <AnimatePresence mode="wait">
                 <motion.p
                   key={showFullDesc ? 'full' : 'short'}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-white/55 text-[15px] leading-[1.75]"
+                  className="text-white/70 text-[16px] leading-[1.8] font-light"
                 >
                   {showFullDesc ? event.description : event.description.slice(0, 200) + (event.description.length > 200 ? '...' : '')}
                 </motion.p>
@@ -504,7 +579,7 @@ export default function EventDetailPage() {
               {event.description.length > 200 && (
                 <button
                   onClick={() => setShowFullDesc(!showFullDesc)}
-                  className="text-[#C11E38] text-sm font-medium mt-3 flex items-center gap-1 hover:text-[#E8334F] transition-colors duration-300"
+                  className="text-white/40 hover:text-white text-sm font-medium mt-4 flex items-center gap-1.5 transition-colors duration-300"
                 >
                   {showFullDesc ? <><ChevronUp size={14} />Show less</> : <><ChevronDown size={14} />Read more</>}
                 </button>
@@ -519,15 +594,15 @@ export default function EventDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-8"
+            className="mt-12"
           >
-            <h3 className="text-white/30 text-xs font-semibold uppercase tracking-[0.15em] mb-4">Schedule</h3>
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] overflow-hidden divide-y divide-white/[0.04]">
+            <h3 className="text-white/40 text-[11px] font-semibold uppercase tracking-[0.2em] mb-4">Schedule</h3>
+            <div className="rounded-[24px] bg-white/[0.02] border border-white/[0.05] overflow-hidden backdrop-blur-xl">
               {event.schedule.map((item, i) => (
-                <div key={i} className="flex items-center gap-4 px-5 py-4">
-                  <span className="text-white/30 text-sm font-mono w-16 flex-shrink-0">{item.time}</span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#800020] flex-shrink-0" />
-                  <p className="text-white/70 text-[15px]">{item.activity}</p>
+                <div key={i} className="flex items-start gap-4 px-6 py-5 border-b border-white/[0.05] last:border-0 hover:bg-white/[0.02] transition-colors duration-300">
+                  <span className="text-white/40 text-sm font-mono tracking-wider w-16 flex-shrink-0 pt-0.5">{item.time}</span>
+                  <div className="w-2 h-2 rounded-full bg-[#C11E38] flex-shrink-0 mt-1.5 shadow-[0_0_10px_rgba(193,30,56,0.5)]" />
+                  <p className="text-white/80 text-[16px] font-light leading-relaxed">{item.activity}</p>
                 </div>
               ))}
             </div>
@@ -540,25 +615,25 @@ export default function EventDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.52 }}
-            className="mt-8"
+            className="mt-12"
           >
-            <h3 className="text-white/30 text-xs font-semibold uppercase tracking-[0.15em] mb-4">Things to Know</h3>
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] overflow-hidden divide-y divide-white/[0.04]">
+            <h3 className="text-white/40 text-[11px] font-semibold uppercase tracking-[0.2em] mb-4">Things to Know</h3>
+            <div className="rounded-[24px] bg-white/[0.02] border border-white/[0.05] overflow-hidden backdrop-blur-xl">
               {visibleThingsToKnow.map((text, i) => (
-                <div key={i} className="flex items-center gap-4 px-5 py-4">
-                  <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-                    <Info size={15} className="text-white/50" />
+                <div key={i} className="flex items-start gap-4 px-6 py-5 border-b border-white/[0.05] last:border-0">
+                  <div className="w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Info size={15} strokeWidth={1.5} className="text-white/60" />
                   </div>
-                  <p className="text-white/70 text-[15px] flex-1">{text}</p>
+                  <p className="text-white/70 text-[15px] font-light leading-relaxed flex-1 pt-1">{text}</p>
                 </div>
               ))}
             </div>
             {thingsToKnow.length > 3 && (
               <button
                 onClick={() => setShowAllThingsToKnow(!showAllThingsToKnow)}
-                className="text-[#C11E38] text-sm font-medium mt-3 flex items-center gap-1 hover:text-[#E8334F] transition-colors duration-300"
+                className="text-white/40 hover:text-white text-sm font-medium mt-4 flex items-center gap-1.5 transition-colors duration-300"
               >
-                {showAllThingsToKnow ? <><ChevronUp size={14} />Show less</> : <><ChevronDown size={14} />See all {thingsToKnow.length} items</>}
+                {showAllThingsToKnow ? <><ChevronUp size={14} />Show less</> : <><ChevronDown size={14} />See all {thingsToKnow.length} essentials</>}
               </button>
             )}
           </motion.div>
@@ -569,30 +644,31 @@ export default function EventDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.54 }}
-          className="mt-8"
+          className="mt-12"
         >
-          <h3 className="text-white/30 text-xs font-semibold uppercase tracking-[0.15em] mb-4">Gallery</h3>
+          <h3 className="text-white/40 text-[11px] font-semibold uppercase tracking-[0.2em] mb-4">Gallery</h3>
           {galleryImages.length > 0 ? (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5 md:-mx-8 md:px-8">
+            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-5 px-5 md:-mx-8 md:px-8 snap-x">
               {galleryImages.map((img, i) => {
                 const src = typeof img === 'string' ? img : (img as any).image_url || (img as any).url || (img as any).image;
                 return (
-                  <div key={i} className="relative flex-shrink-0 w-44 h-44 rounded-2xl overflow-hidden group">
-                    <Image quality={90}
+                  <div key={i} className="relative flex-shrink-0 w-48 h-64 md:w-56 md:h-72 rounded-[24px] overflow-hidden group snap-center shadow-lg border border-white/[0.05]">
+                    <Image quality={100}
                       src={src}
                       alt={`Gallery ${i + 1}`}
                       fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="176px"
+                      className="object-cover group-hover:scale-110 transition-transform duration-700 ease-[0.16,1,0.3,1]"
+                      sizes="(max-width: 768px) 192px, 224px"
                     />
+                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.06] h-44 flex flex-col items-center justify-center gap-2">
-              <ImageIcon size={24} className="text-white/20" />
-              <p className="text-white/30 text-sm">No images added yet</p>
+            <div className="rounded-[24px] bg-white/[0.02] border border-white/[0.05] h-48 flex flex-col items-center justify-center gap-3 backdrop-blur-xl">
+              <ImageIcon size={24} strokeWidth={1.5} className="text-white/20" />
+              <p className="text-white/40 text-[14px] font-light tracking-wide">No images added</p>
             </div>
           )}
         </motion.div>
@@ -603,9 +679,9 @@ export default function EventDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.56 }}
-            className="mt-8"
+            className="mt-12"
           >
-            <h3 className="text-white/30 text-xs font-semibold uppercase tracking-[0.15em] mb-4">Select Ticket</h3>
+            <h3 className="text-white/40 text-[11px] font-semibold uppercase tracking-[0.2em] mb-4">Select Ticket</h3>
             <div className="space-y-3">
               {event.ticket_tiers.map((tier) => {
                 const available = tier.quantity - tier.sold_count;
@@ -616,25 +692,29 @@ export default function EventDetailPage() {
                     key={tier.tier_id}
                     onClick={() => isAvailable && setSelectedTier(tier.tier_id)}
                     disabled={!isAvailable}
-                    className={`w-full text-left rounded-2xl p-5 border-2 transition-all duration-300 flex items-center justify-between gap-4 ${
+                    className={`w-full text-left rounded-[24px] p-6 border transition-all duration-500 flex items-center justify-between gap-4 backdrop-blur-xl ${
                       isSelected
-                        ? 'border-[#C11E38] bg-[#C11E38]/5'
-                        : 'border-white/[0.06] bg-white/[0.04] hover:bg-white/[0.06]'
-                    } ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ? 'border-[#C11E38] bg-[#C11E38]/10'
+                        : 'border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.04]'
+                    } ${!isAvailable ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:scale-[1.01] active:scale-[0.99]'}`}
                   >
                     <div className="min-w-0">
-                      <p className="text-white font-semibold text-[15px]">{tier.name}</p>
-                      {tier.description && <p className="text-white/40 text-sm mt-1">{tier.description}</p>}
-                      <p className={`text-xs mt-1.5 font-medium ${isAvailable ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className="text-white/90 font-medium text-[16px] tracking-wide">{tier.name}</p>
+                      {tier.description && <p className="text-white/50 text-[14px] font-light mt-1">{tier.description}</p>}
+                      <p className={`text-[12px] mt-2 font-medium tracking-wide uppercase ${isAvailable ? 'text-emerald-400' : 'text-red-400'}`}>
                         {isAvailable ? `${available} left` : 'Sold Out'}
                       </p>
                     </div>
                     <div className="flex flex-col items-end flex-shrink-0">
-                      <p className="text-white font-bold text-lg">{tier.price > 0 ? formatCurrency(tier.price) : 'FREE'}</p>
+                      <p className="text-white font-semibold text-xl tracking-tight">{tier.price > 0 ? formatCurrency(tier.price) : 'FREE'}</p>
                       {isSelected && (
-                        <div className="w-6 h-6 rounded-full bg-[#C11E38] flex items-center justify-center mt-1">
-                          <CheckCircle size={14} className="text-white" />
-                        </div>
+                        <motion.div 
+                          initial={{ scale: 0 }} 
+                          animate={{ scale: 1 }} 
+                          className="w-6 h-6 rounded-full bg-[#C11E38] flex items-center justify-center mt-2 shadow-[0_0_15px_rgba(193,30,56,0.6)]"
+                        >
+                          <CheckCircle size={14} className="text-white" strokeWidth={2.5} />
+                        </motion.div>
                       )}
                     </div>
                   </button>
@@ -649,16 +729,17 @@ export default function EventDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.55 }}
-          className="mt-8"
+          className="mt-12"
         >
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#800020]/10 via-[#D4AF37]/5 to-[#800020]/10 border border-[#D4AF37]/15 p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/15 flex items-center justify-center flex-shrink-0">
-                <Crown size={18} className="text-[#D4AF37]" />
+          <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-[#D4AF37]/10 via-transparent to-[#D4AF37]/5 border border-[#D4AF37]/20 p-6 backdrop-blur-xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37] opacity-[0.03] blur-[50px] pointer-events-none rounded-full" />
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0 border border-[#D4AF37]/20">
+                <Crown size={20} strokeWidth={1.5} className="text-[#D4AF37]" />
               </div>
               <div>
-                <p className="text-[#D4AF37] text-xs font-semibold tracking-[0.1em] uppercase">Krown Pass</p>
-                <p className="text-white/50 text-sm mt-0.5">Early access & priority registration</p>
+                <p className="text-[#D4AF37] text-[12px] font-bold tracking-[0.2em] uppercase">Krown Pass</p>
+                <p className="text-[#D4AF37]/70 text-[14px] font-light mt-1">Unlock early access & priority privileges</p>
               </div>
             </div>
           </div>
@@ -666,91 +747,87 @@ export default function EventDetailPage() {
       </div>
 
       {/* ── Sticky Bottom Bar ── */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50">
-        <div className="bg-[#0A0A0A]/80 backdrop-blur-2xl border-t border-white/[0.06]">
-          <div className="max-w-3xl mx-auto px-5 md:px-8 py-4">
-            <div className="flex items-center justify-between gap-4">
-              {/* Price */}
-              <div className="flex-shrink-0">
-                {event.is_paid && event.base_price ? (
-                  <p className="text-white font-bold text-xl tracking-tight">{formatCurrency(Number(event.base_price))}</p>
-                ) : (
-                  <p className="text-emerald-400 font-bold text-xl tracking-tight">Free</p>
-                )}
-                <p className="text-white/30 text-xs mt-0.5">
-                  {remainingAllowance > 0
-                    ? `${remainingAllowance} tickets available`
-                    : 'All slots booked'}
-                </p>
-              </div>
+      <div className="fixed bottom-16 md:bottom-6 left-0 right-0 z-50 md:px-8 pointer-events-none flex justify-center">
+        <div className="w-full max-w-4xl bg-black/60 backdrop-blur-3xl md:rounded-[32px] border-t md:border border-white/[0.08] pointer-events-auto p-4 md:p-5 shadow-[0_-20px_40px_rgba(0,0,0,0.5)] flex items-center justify-between gap-4 transition-all duration-500">
+          {/* Price */}
+          <div className="flex-shrink-0 pl-2">
+            {event.is_paid && event.base_price ? (
+              <p className="text-white font-semibold text-2xl tracking-tight leading-none">{formatCurrency(Number(event.base_price))}</p>
+            ) : (
+              <p className="text-white font-semibold text-2xl tracking-tight leading-none">Free</p>
+            )}
+            <p className="text-white/40 text-[12px] mt-1 font-medium tracking-wide uppercase">
+              {remainingAllowance > 0
+                ? `${remainingAllowance} slots left`
+                : 'All slots booked'}
+            </p>
+          </div>
 
-              {/* Action Buttons */}
-              <div className="flex-1 flex justify-end gap-3">
-                {isPastEvent ? (
-                  <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.06] text-white/40 font-semibold text-sm cursor-not-allowed">
-                    <CheckCircle size={16} className="opacity-50" /> Event Ended
-                  </button>
-                ) : userRegistration?.status === "PENDING" ? (
-                  <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.06] text-white/40 font-semibold text-sm cursor-not-allowed">
-                    <Clock size={16} /> Confirming...
-                  </button>
-                ) : hasMaxedOut || (isSoldOut && hasBookedTickets) ? (
-                  <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.06] text-white/40 font-semibold text-sm cursor-not-allowed">
-                    <CheckCircle size={16} /> Booked
-                  </button>
-                ) : isSoldOut && !event.is_waitlist_open ? (
-                  <button disabled className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.06] text-white/30 font-semibold text-sm cursor-not-allowed">
-                    Sold Out
-                  </button>
-                ) : !isRegistrationOpen ? (
-                  <button disabled className="flex-1 max-w-[200px] py-3 rounded-2xl bg-white/[0.06] text-white/30 font-semibold text-sm cursor-not-allowed">
-                    Registration Closed
-                  </button>
-                ) : isSoldOut && event.is_waitlist_open ? (
-                  <button
-                    onClick={handleWaitlist}
-                    disabled={waitlistMutation.isPending}
-                    className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-transparent border border-[#800020]/60 text-[#C11E38] font-semibold text-sm hover:bg-[#800020]/10 transition-all duration-300"
-                  >
-                    {waitlistMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : null}
-                    Join Waitlist
-                  </button>
-                ) : (
-                  <div className="flex flex-1 justify-end items-center gap-3">
-                    {remainingAllowance > 1 && isRegistrationOpen && (
-                      <div className="flex items-center bg-white/[0.06] border border-white/[0.08] rounded-2xl p-1">
-                        <button
-                          onClick={() => setTicketCount(Math.max(1, ticketCount - 1))}
-                          disabled={ticketCount <= 1}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/[0.06] disabled:opacity-30 hover:bg-white/[0.12] transition-all duration-300 text-white"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="w-9 text-center font-bold text-white text-sm tabular-nums">
-                          {ticketCount}
-                        </span>
-                        <button
-                          onClick={() => setTicketCount(Math.min(remainingAllowance as number, ticketCount + 1))}
-                          disabled={ticketCount >= (remainingAllowance as number)}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/[0.06] disabled:opacity-30 hover:bg-white/[0.12] transition-all duration-300 text-white"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-                    )}
-
+          {/* Action Buttons */}
+          <div className="flex-1 flex justify-end gap-3">
+            {isPastEvent ? (
+              <button disabled className="flex-1 max-w-[220px] flex items-center justify-center gap-2 py-3.5 rounded-full bg-white/[0.04] text-white/40 font-semibold text-[15px] cursor-not-allowed">
+                <CheckCircle size={18} className="opacity-50" /> Ended
+              </button>
+            ) : userRegistration?.status === "PENDING" ? (
+              <button disabled className="flex-1 max-w-[220px] flex items-center justify-center gap-2 py-3.5 rounded-full bg-white/[0.04] text-white/40 font-semibold text-[15px] cursor-not-allowed">
+                <Clock size={18} /> Confirming...
+              </button>
+            ) : hasMaxedOut || (isSoldOut && hasBookedTickets) ? (
+              <button disabled className="flex-1 max-w-[220px] flex items-center justify-center gap-2 py-3.5 rounded-full bg-white/[0.04] text-white/40 font-semibold text-[15px] cursor-not-allowed">
+                <CheckCircle size={18} /> Booked
+              </button>
+            ) : isSoldOut && !event.is_waitlist_open ? (
+              <button disabled className="flex-1 max-w-[220px] flex items-center justify-center gap-2 py-3.5 rounded-full bg-white/[0.04] text-white/30 font-semibold text-[15px] cursor-not-allowed">
+                Sold Out
+              </button>
+            ) : !isRegistrationOpen ? (
+              <button disabled className="flex-1 max-w-[220px] py-3.5 rounded-full bg-white/[0.04] text-white/30 font-semibold text-[15px] cursor-not-allowed">
+                Closed
+              </button>
+            ) : isSoldOut && event.is_waitlist_open ? (
+              <button
+                onClick={handleWaitlist}
+                disabled={waitlistMutation.isPending}
+                className="flex-1 max-w-[220px] flex items-center justify-center gap-2 py-3.5 rounded-full bg-transparent border border-white/20 text-white font-semibold text-[15px] hover:bg-white/10 active:scale-[0.98] transition-all duration-300"
+              >
+                {waitlistMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : null}
+                Join Waitlist
+              </button>
+            ) : (
+              <div className="flex flex-1 justify-end items-center gap-4">
+                {remainingAllowance > 1 && isRegistrationOpen && (
+                  <div className="flex items-center bg-white/[0.04] border border-white/[0.08] rounded-full p-1.5 backdrop-blur-xl">
                     <button
-                      onClick={handleRegister}
-                      disabled={registerMutation.isPending || paymentLoading}
-                      className="flex-1 max-w-[200px] flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#800020] hover:bg-[#9B0028] disabled:opacity-50 text-white font-semibold text-sm transition-all duration-300 shadow-lg shadow-[#800020]/20"
+                      onClick={() => setTicketCount(Math.max(1, ticketCount - 1))}
+                      disabled={ticketCount <= 1}
+                      className="w-10 h-10 rounded-full flex items-center justify-center bg-white/[0.05] disabled:opacity-30 hover:bg-white/[0.15] active:scale-95 transition-all duration-300 text-white"
                     >
-                      {(registerMutation.isPending || paymentLoading) ? <Loader2 size={16} className="animate-spin" /> : null}
-                      {hasBookedTickets ? 'Book More' : event.is_paid ? `Pay ${formatCurrency(ticketCount * Number(event.base_price || 0))}` : 'Register'}
+                      <Minus size={16} strokeWidth={2} />
+                    </button>
+                    <span className="w-10 text-center font-semibold text-white text-[15px] tabular-nums">
+                      {ticketCount}
+                    </span>
+                    <button
+                      onClick={() => setTicketCount(Math.min(remainingAllowance as number, ticketCount + 1))}
+                      disabled={ticketCount >= (remainingAllowance as number)}
+                      className="w-10 h-10 rounded-full flex items-center justify-center bg-white/[0.05] disabled:opacity-30 hover:bg-white/[0.15] active:scale-95 transition-all duration-300 text-white"
+                    >
+                      <Plus size={16} strokeWidth={2} />
                     </button>
                   </div>
                 )}
+
+                <button
+                  onClick={handleRegister}
+                  disabled={registerMutation.isPending || paymentLoading}
+                  className="flex-1 max-w-[240px] flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-gradient-to-r from-[#C11E38] to-[#9B0028] disabled:from-white/10 disabled:to-white/10 disabled:text-white/40 text-white font-semibold text-[16px] tracking-wide hover:shadow-[0_0_20px_rgba(193,30,56,0.4)] active:scale-[0.98] transition-all duration-300"
+                >
+                  {(registerMutation.isPending || paymentLoading) ? <Loader2 size={18} className="animate-spin" /> : null}
+                  {hasBookedTickets ? 'Book More' : event.is_paid ? `Pay ${formatCurrency(ticketCount * Number(event.base_price || 0))}` : 'Register'}
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

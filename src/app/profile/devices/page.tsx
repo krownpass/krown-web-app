@@ -11,11 +11,13 @@ import { Badge } from '@/components/ui/Badge';
 import { useDevices, useRemoveDevice } from '@/queries/useUser';
 import { formatRelativeTime } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getDeviceMetadata } from '@/services/auth.service';
 
-function DeviceIcon({ type }: { type?: string }) {
+function DeviceIcon({ type, isCurrent }: { type?: string; isCurrent?: boolean }) {
+  if (isCurrent) return <Monitor size={18} className="text-white/60" />;
   if (!type) return <Smartphone size={18} className="text-white/60" />;
-  if (type.includes('tablet')) return <Tablet size={18} className="text-white/60" />;
-  if (type.includes('desktop') || type.includes('laptop')) return <Monitor size={18} className="text-white/60" />;
+  if (type.toLowerCase().includes('tablet')) return <Tablet size={18} className="text-white/60" />;
+  if (type.toLowerCase().includes('desktop') || type.toLowerCase().includes('laptop') || type.toLowerCase().includes('web')) return <Monitor size={18} className="text-white/60" />;
   return <Smartphone size={18} className="text-white/60" />;
 }
 
@@ -23,6 +25,16 @@ export default function DevicesPage() {
   const router = useRouter();
   const { data: devices = [], isLoading } = useDevices();
   const removeDevice = useRemoveDevice();
+
+  const [currentDeviceId, setCurrentDeviceId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    getDeviceMetadata().then((meta) => {
+      if (meta?.device_id) {
+        setCurrentDeviceId(meta.device_id);
+      }
+    }).catch(console.error);
+  }, []);
 
   const handleRemove = async (deviceId: string) => {
     try {
@@ -51,7 +63,10 @@ export default function DevicesPage() {
           <EmptyState icon="Smartphone" title="No active sessions" subtitle="Your logged-in devices will appear here" />
         ) : (
           <div className="space-y-3">
-            {devices.map((device, i) => (
+            {devices.map((device, i) => {
+              const isCurrent = device.is_current || device.device_id === currentDeviceId;
+              
+              return (
               <motion.div
                 key={device.device_id}
                 initial={{ opacity: 0, y: 10 }}
@@ -59,16 +74,16 @@ export default function DevicesPage() {
                 transition={{ delay: i * 0.06 }}
                 className="flex items-center gap-4 p-4 bg-[#1E1E1E] border border-[#2A2A2A] rounded-xl"
               >
-                <DeviceIcon type={device.device_type} />
+                <DeviceIcon type={device.device_type} isCurrent={isCurrent} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className="text-white font-medium text-sm truncate">{device.device_name}</p>
-                    {device.is_current && <Badge variant="success">Current</Badge>}
+                    {isCurrent && <Badge variant="success">Active</Badge>}
                   </div>
                   <p className="text-white/40 text-xs">Last active {formatRelativeTime(device.last_active)}</p>
                   {device.ip_address && <p className="text-white/30 text-xs font-mono">{device.ip_address}</p>}
                 </div>
-                {!device.is_current && (
+                {!isCurrent && (
                   <button
                     onClick={() => handleRemove(device.device_id)}
                     disabled={removeDevice.isPending}
@@ -78,7 +93,7 @@ export default function DevicesPage() {
                   </button>
                 )}
               </motion.div>
-            ))}
+            )})}
           </div>
         )}
       </div>

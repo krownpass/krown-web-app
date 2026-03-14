@@ -5,7 +5,7 @@ import { UAParser } from "ua-parser-js";
 
 let fpInstance: any = null;
 
-async function getDeviceMetadata() {
+export async function getDeviceMetadata() {
   try {
     if (!fpInstance) {
       fpInstance = await fpPromise.load();
