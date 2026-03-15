@@ -105,14 +105,21 @@ export const authService = {
     if (typeof window !== "undefined") {
       localStorage.removeItem("krown_token");
       localStorage.removeItem("krown_user");
+      localStorage.removeItem("krown-auth");
     }
   },
 
+  async generateWebLoginToken(): Promise<string> {
+    const res = await api.post("/auth/web-login-token");
+    return res.data.token || res.data.data?.token || res.data;
+  },
+
   async deleteAccount(): Promise<void> {
-    await api.delete("/auth/account");
+    await api.delete("/users/me");
     if (typeof window !== "undefined") {
       localStorage.removeItem("krown_token");
       localStorage.removeItem("krown_user");
+      localStorage.removeItem("krown-auth");
     }
   },
 };
