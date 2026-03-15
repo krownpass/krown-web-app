@@ -7,12 +7,14 @@ import Link from 'next/link';
 import {
   User, Edit2, Bookmark, BookOpen, Receipt, Smartphone, Users, Crown,
   LogOut, ChevronRight, AlertTriangle, Star, Ticket, Activity, Home,
-  Calendar
+  Calendar, Settings
 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { Avatar } from '@/components/ui/Avatar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useProfile } from '@/queries/useUser';
+import { useMyBookings } from '@/queries/useBookings';
+import { useMyTickets } from '@/queries/useEventDetail';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from 'sonner';
 
@@ -24,11 +26,15 @@ const menuItems = [
   { href: '/profile/devices', icon: Smartphone, label: 'Active Sessions', description: 'Manage your logged-in devices and security' },
   { href: '/profile/referrals', icon: Users, label: 'Referrals', description: 'Invite friends and earn Krown points' },
   { href: '/krown-pass', icon: Crown, label: 'Krown Pass', description: 'Manage your exclusive membership benefits' },
+  { href: '/profile/settings', icon: Settings, label: 'Settings', description: 'App settings and account deletion' },
 ];
 
 export default function ProfilePage() {
   const router = useRouter();
   const { data: profile, isLoading } = useProfile();
+  const { data: bookings } = useMyBookings('cafe');
+  const { data: tickets } = useMyTickets();
+  
   const { logout } = useAuthStore();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -124,8 +130,8 @@ export default function ProfilePage() {
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { label: 'Bookings', value: '—', icon: Calendar },
-                      { label: 'Events', value: '—', icon: Ticket },
+                      { label: 'Bookings', value: bookings ? bookings.length.toString() : '—', icon: Calendar },
+                      { label: 'Events', value: tickets ? tickets.length.toString() : '—', icon: Ticket },
                       { label: 'Points', value: (profile.krown_points ?? 0).toLocaleString(), icon: Star },
                     ].map((stat, idx) => (
                       <div key={stat.label} className="bg-white/[0.02] rounded-2xl p-4 text-center border border-white/[0.03] hover:border-[#800020]/30 transition-colors duration-300 group relative overflow-hidden">

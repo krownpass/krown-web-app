@@ -8,10 +8,13 @@ import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { useDevices, useRemoveDevice } from '@/queries/useUser';
 import { formatRelativeTime } from '@/lib/utils';
 import { toast } from 'sonner';
 import { getDeviceMetadata } from '@/services/auth.service';
+import { useAuthStore } from '@/stores/authStore';
 
 function DeviceIcon({ type, isCurrent }: { type?: string; isCurrent?: boolean }) {
   if (isCurrent) return <Monitor size={18} className="text-white/60" />;
@@ -25,8 +28,10 @@ export default function DevicesPage() {
   const router = useRouter();
   const { data: devices = [], isLoading } = useDevices();
   const removeDevice = useRemoveDevice();
+  const { logout } = useAuthStore();
 
   const [currentDeviceId, setCurrentDeviceId] = React.useState<string | null>(null);
+  const [deviceToRemove, setDeviceToRemove] = React.useState<{ id: string; isCurrent: boolean } | null>(null);
 
   React.useEffect(() => {
     getDeviceMetadata().then((meta) => {
@@ -36,12 +41,20 @@ export default function DevicesPage() {
     }).catch(console.error);
   }, []);
 
-  const handleRemove = async (deviceId: string) => {
+  const handleRemoveConfirm = async () => {
+    if (!deviceToRemove) return;
+
     try {
-      await removeDevice.mutateAsync(deviceId);
+      await removeDevice.mutateAsync(deviceToRemove.id);
       toast.success('Session removed');
+      if (deviceToRemove.isCurrent) {
+        await logout();
+        router.push('/login');
+      }
     } catch {
       toast.error('Failed to remove session');
+    } finally {
+      setDeviceToRemove(null);
     }
   };
 
@@ -83,19 +96,48 @@ export default function DevicesPage() {
                   <p className="text-white/40 text-xs">Last active {formatRelativeTime(device.last_active)}</p>
                   {device.ip_address && <p className="text-white/30 text-xs font-mono">{device.ip_address}</p>}
                 </div>
-                {!isCurrent && (
-                  <button
-                    onClick={() => handleRemove(device.device_id)}
-                    disabled={removeDevice.isPending}
-                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
+                <button
+                  onClick={() => setDeviceToRemove({ id: device.device_id, isCurrent })}
+                  disabled={removeDevice.isPending}
+                  className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
               </motion.div>
             )})}
           </div>
         )}
+
+        <Modal
+          isOpen={!!deviceToRemove}
+          onClose={() => setDeviceToRemove(null)}
+          title="Remove Session"
+          size="sm"
+        >
+          <p className="text-white/80 text-sm mb-6">
+            {deviceToRemove?.isCurrent
+              ? 'Removing the active device will log you out from this session. Are you sure?'
+              : 'Are you sure you want to remove this session?'}
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setDeviceToRemove(null)}
+              disabled={removeDevice.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              fullWidth
+              onClick={handleRemoveConfirm}
+              loading={removeDevice.isPending}
+            >
+              Remove
+            </Button>
+          </div>
+        </Modal>
       </div>
     </ProtectedRoute>
   );

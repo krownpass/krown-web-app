@@ -110,6 +110,8 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authService.deleteAccount();
           set({ user: null, token: null, isAuthenticated: false });
+        } catch (error) {
+          throw error;
         } finally {
           set({ isLoading: false });
         }

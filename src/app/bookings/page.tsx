@@ -14,23 +14,20 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
-// ── Café booking_status DB enum: pending | accepted | rejected | cancelled ──
+// ── Café booking_status DB enum filter ──
 const CAFE_STATUS_FILTERS = [
   { label: 'All',       value: 'all'       },
   { label: 'Pending',   value: 'pending'   },
   { label: 'Accepted',  value: 'accepted'  },
-  { label: 'Rejected',  value: 'rejected'  },
   { label: 'Cancelled', value: 'cancelled' },
 ];
 
-// ── Event registration_status DB enum: PENDING | CONFIRMED | CHECKED_IN | REJECTED | CANCELLED ──
+// ── Event registration_status DB enum filter ──
 const EVENT_STATUS_FILTERS = [
-  { label: 'All',        value: 'all'        },
-  { label: 'Pending',    value: 'PENDING'    },
-  { label: 'Confirmed',  value: 'CONFIRMED'  },
-  { label: 'Checked In', value: 'CHECKED_IN' },
-  { label: 'Rejected',   value: 'REJECTED'   },
-  { label: 'Cancelled',  value: 'CANCELLED'  },
+  { label: 'All',       value: 'all'       },
+  { label: 'Pending',   value: 'PENDING'   },
+  { label: 'Confirmed', value: 'CONFIRMED' },
+  { label: 'Cancelled', value: 'CANCELLED' },
 ];
 
 const TABS = [
@@ -81,9 +78,28 @@ export default function BookingsPage() {
   const filters     = tabType === 'cafe' ? CAFE_STATUS_FILTERS : EVENT_STATUS_FILTERS;
 
   // Apply status filter
-  const statusFiltered = currentList.filter((item: any) =>
-    statusFilter === 'all' ? true : item.status === statusFilter
-  );
+  const statusFiltered = currentList.filter((item: any) => {
+    if (statusFilter === 'all') return true;
+    
+    // Grouping logic for Cafe 
+    if (tabType === 'cafe') {
+      if (statusFilter === 'cancelled') {
+        return ['cancelled', 'rejected'].includes(item.status);
+      }
+    }
+
+    // If we're looking at events, grouping some statuses into "Confirmed" and "Cancelled"
+    if (tabType === 'event') {
+      if (statusFilter === 'CONFIRMED') {
+        return ['CONFIRMED', 'CHECKED_IN'].includes(item.status);
+      }
+      if (statusFilter === 'CANCELLED') {
+        return ['CANCELLED', 'REJECTED'].includes(item.status);
+      }
+    }
+    
+    return item.status === statusFilter;
+  });
 
   // Split into upcoming and past sections
   const upcoming = statusFiltered.filter((item: any) =>
@@ -135,41 +151,41 @@ export default function BookingsPage() {
 
               {/* Booking Type */}
               <div>
-                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest pl-2 mb-3">Booking Type</p>
-                <div className="flex flex-col gap-2">
+                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest pl-2 mb-3 md:block hidden">Booking Type</p>
+                <div className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none">
                   {TABS.map((tab) => (
                     <button
                       key={tab.value}
                       onClick={() => { setTabType(tab.value as 'cafe' | 'event'); setStatusFilter('all'); }}
-                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between ${
+                      className={`whitespace-nowrap w-auto md:w-full shrink-0 text-left px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-between gap-3 ${
                         tabType === tab.value
                           ? 'bg-[#800020]/10 text-white font-medium border border-[#800020]/20'
-                          : 'text-white/60 hover:bg-white/[0.02] border border-transparent hover:text-white'
+                          : 'text-white/60 hover:bg-white/[0.02] border border-transparent hover:text-white bg-white/[0.02] md:bg-transparent'
                       }`}
                     >
                       {tab.label}
-                      {tabType === tab.value && <span className="w-1.5 h-1.5 rounded-full bg-[#800020]" />}
+                      {tabType === tab.value && <span className="w-1.5 h-1.5 rounded-full bg-[#800020] hidden md:block" />}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Status filter — uses correct enum per booking type */}
+              {/* Status filter */}
               <div>
-                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest pl-2 mb-3">Status</p>
-                <div className="flex flex-col gap-2">
+                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest pl-2 mb-3 md:block hidden">Status</p>
+                <div className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 scrollbar-none">
                   {filters.map((f) => (
                     <button
                       key={f.value}
                       onClick={() => setStatusFilter(f.value)}
-                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between ${
+                      className={`whitespace-nowrap w-auto md:w-full shrink-0 text-left px-4 py-2 rounded-lg text-sm transition-all flex items-center justify-between gap-3 ${
                         statusFilter === f.value
                           ? 'bg-white/[0.05] text-white font-medium border border-white/10'
-                          : 'text-white/60 hover:bg-white/[0.02] border border-transparent hover:text-white'
+                          : 'text-white/60 hover:bg-white/[0.02] border border-transparent hover:text-white bg-white/[0.02] md:bg-transparent'
                       }`}
                     >
                       {f.label}
-                      {statusFilter === f.value && <span className="w-1.5 h-1.5 rounded-full bg-white/50" />}
+                      {statusFilter === f.value && <span className="w-1.5 h-1.5 rounded-full bg-white/50 hidden md:block" />}
                     </button>
                   ))}
                 </div>
