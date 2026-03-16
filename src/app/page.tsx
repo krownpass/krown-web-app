@@ -14,6 +14,8 @@ import { CafeSwipeStack } from '@/components/cafe/CafeSwipeStack';
 import { KROWN_VIBES } from '@/lib/constants';
 import { useHomeData } from '@/queries/useHome';
 
+import { useRouter } from 'next/navigation';
+
 function SectionReveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
     <motion.div
@@ -29,6 +31,7 @@ function SectionReveal({ children, delay = 0 }: { children: React.ReactNode; del
 
 export default function HomePage() {
   const { data: homeData } = useHomeData();
+  const router = useRouter();
 
   // Map server stories to StoriesRow format
   const stories = (homeData?.stories ?? []).map((s) => ({
@@ -96,7 +99,10 @@ export default function HomePage() {
         <section>
           <h2 className="font-playfair text-xl font-bold text-white mb-2">Up For An Adventure?</h2>
           <p className="text-white/40 text-sm mb-5">Swipe to discover cafés near you</p>
-          <CafeSwipeStack cafes={homeData?.recommendedCafes ?? []} />
+          <CafeSwipeStack 
+            cafes={homeData?.recommendedCafes ?? []} 
+            onCardPress={(cafe) => router.push(`/cafes/${cafe.slug ?? cafe.cafe_id}`)}
+          />
         </section>
       </SectionReveal>
 
