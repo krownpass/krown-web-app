@@ -25,6 +25,7 @@ export interface Cafe {
   has_krown_pass_benefit?: boolean;
   discount_percent?: number;
   special_offers?: SpecialOffer[];
+  offers?: { title: string; description: string }[];
   krown_recommended?: MenuItem[];
   created_at: string;
   updated_at: string;

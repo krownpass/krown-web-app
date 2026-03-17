@@ -47,5 +47,6 @@ export const queryKeys = {
     bookmarks: ["user", "bookmarks"] as const,
     eventBookmarks: ["user", "eventBookmarks"] as const,
     referral: ["user", "referral"] as const,
+    redeems: ["user", "redeems"] as const,
   },
 } as const;

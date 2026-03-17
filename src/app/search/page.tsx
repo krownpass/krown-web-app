@@ -75,7 +75,13 @@ function AiCafeCard({ cafe }: { cafe: AiCafe }) {
             />
           ) : (
             <div className="w-full h-full bg-[#252525] flex items-center justify-center">
-              <span className="text-white/20 text-4xl">☕</span>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="text-white/15">
+                <path d="M17 8h1a4 4 0 0 1 0 8h-1"/>
+                <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+                <line x1="6" x2="6" y1="2" y2="4"/>
+                <line x1="10" x2="10" y1="2" y2="4"/>
+                <line x1="14" x2="14" y1="2" y2="4"/>
+              </svg>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -397,7 +403,9 @@ export default function SearchPage() {
                 {/* Fallback banner */}
                 {fallbackMessage && (
                   <div className="flex items-start gap-3 bg-[#1A1A1A] border-l-4 border-[#444] rounded-xl px-4 py-3">
-                    <span className="text-xl mt-0.5">😔</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/30 mt-0.5 shrink-0">
+                      <circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/>
+                    </svg>
                     <p className="text-white/50 text-sm leading-relaxed">{fallbackMessage}</p>
                   </div>
                 )}

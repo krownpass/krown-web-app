@@ -2,6 +2,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/services/api';
 import { userService } from '@/services/user.service';
 import { queryKeys } from '@/queries/queryKeys';
 import type { User, UserDevice, Transaction, UpdateProfileData } from '@/types/user';
@@ -296,6 +297,23 @@ export function useRemoveEventBookmark() {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
       toast.error('Failed to remove bookmark.');
     },
+  });
+}
+
+export function useRedeems(type?: 'initiated' | 'confirmed') {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery<any[]>({
+    queryKey: [...queryKeys.user.redeems, type ?? 'all'],
+    queryFn: async () => {
+      const res = await api.get('/redeems/user', {
+        params: type ? { type } : undefined,
+      });
+      return res.data.data ?? [];
+    },
+    enabled: isAuthenticated,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    ...retryConfig,
   });
 }
 
