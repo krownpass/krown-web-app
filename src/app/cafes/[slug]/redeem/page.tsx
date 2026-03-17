@@ -224,7 +224,7 @@ export default function RedeemDrinkPage() {
 
   return (
     <ProtectedRoute>
-      <div className={`max-w-2xl mx-auto px-4 md:px-6 py-6 min-h-screen ${selectedItem ? 'pb-32' : ''}`}>
+      <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 min-h-screen pb-40 md:pb-32">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => {
             if (plansLoaded) {
@@ -282,7 +282,7 @@ export default function RedeemDrinkPage() {
             )}
 
             {!plansLoaded && (
-              <div className="fixed bottom-0 left-0 right-0 p-4 pb-8 bg-[#0B0B0B] border-t border-[#2A2A2A] z-10">
+              <div className="fixed bottom-10 md:bottom-0 left-0 right-0 p-4 pb-8 bg-[#0B0B0B] border-t border-[#2A2A2A] z-10">
                 <div className="max-w-2xl mx-auto">
                   <button
                     disabled={!selectedItem || isProcessing}
@@ -338,7 +338,7 @@ export default function RedeemDrinkPage() {
               ))
             )}
            
-            <div className="fixed bottom-0 left-0 right-0 p-4 pb-8 bg-[#0B0B0B] border-t border-[#2A2A2A]">
+            <div className="fixed bottom-20 md:bottom-0 left-0 right-0 p-4 pb-8 bg-[#0B0B0B] border-t border-[#2A2A2A]">
                <div className="max-w-2xl mx-auto">
                  <button
                    disabled={!selectedPlan || isProcessing}

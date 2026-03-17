@@ -21,6 +21,8 @@ interface AuthState {
   clearError: () => void;
 }
 
+let lastLoginAttempt = 0;
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -38,11 +40,21 @@ export const useAuthStore = create<AuthState>()(
       },
 
       login: async (phone) => {
+        const now = Date.now();
+        // Cooldown of 5000ms (5 seconds) to prevent React Strict Mode / double-clicking bugs
+        if (now - lastLoginAttempt < 5000) {
+          console.warn("Skipping login attempt due to cooldown");
+          return;
+        }
+        lastLoginAttempt = now;
+
         set({ isLoading: true, error: null });
         try {
           const { session_id } = await authService.sendOtp(phone);
           set({ sessionId: session_id });
         } catch (err: unknown) {
+          // Reset cooldown if it fails so users don't have to wait to correct a typo
+          lastLoginAttempt = 0; 
           const message = err instanceof Error ? err.message : "Failed to send OTP";
           set({ error: message });
           throw err;

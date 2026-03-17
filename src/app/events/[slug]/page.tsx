@@ -251,9 +251,11 @@ export default function EventDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A]">
-        <Skeleton className="h-[420px] md:h-[520px] w-full" />
-        <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+      <div className="min-h-screen bg-[#0A0A0A] pb-36">
+        <div className="w-full max-w-[1400px] mx-auto md:px-6 lg:px-12 md:mt-6">
+          <Skeleton className="h-[65vh] md:h-[75vh] min-h-[500px] w-full md:rounded-[32px]" />
+        </div>
+        <div className="max-w-4xl mx-auto px-5 md:px-8 mt-8 space-y-6">
           <Skeleton className="h-10 w-3/4 rounded-xl" />
           <Skeleton className="h-5 w-1/2 rounded-lg" />
           <div className="grid grid-cols-2 gap-3">
@@ -320,15 +322,16 @@ export default function EventDetailPage() {
     <EventBookingSuccess show={showBookingAnimation} onComplete={handleBookingAnimationComplete} />
     <div className="min-h-screen bg-[#0A0A0A] pb-36">
       {/* ── Hero ── */}
-      <div className="relative h-[65vh] md:h-[75vh] min-h-[500px] overflow-hidden">
-        <motion.div 
-          className="absolute inset-0"
-          initial={{ scale: 1.05 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-        >
+      <div className="w-full max-w-[1400px] mx-auto md:px-6 lg:px-12 md:mt-6">
+        <div className="relative h-[65vh] md:h-[75vh] min-h-[500px] overflow-hidden md:rounded-[32px]">
+          <motion.div 
+            className="absolute inset-0"
+            initial={{ scale: 1.05 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+          >
           {event.cover_image ? (
-            <Image quality={100}
+            <Image
               src={event.cover_image}
               alt={event.title}
               fill
@@ -437,6 +440,7 @@ export default function EventDetailPage() {
               </h1>
             </motion.div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -653,7 +657,7 @@ export default function EventDetailPage() {
                 const src = typeof img === 'string' ? img : (img as any).image_url || (img as any).url || (img as any).image;
                 return (
                   <div key={i} className="relative flex-shrink-0 w-48 h-64 md:w-56 md:h-72 rounded-[24px] overflow-hidden group snap-center shadow-lg border border-white/[0.05]">
-                    <Image quality={100}
+                    <Image
                       src={src}
                       alt={`Gallery ${i + 1}`}
                       fill
