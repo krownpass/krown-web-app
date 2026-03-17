@@ -25,6 +25,7 @@ function mapCafe(raw: any): Cafe {
     is_bookmarked: raw.is_favourite ?? raw.is_bookmarked ?? false,
     has_krown_pass_benefit: raw.has_krown_pass_benefit ?? raw.editors_pick ?? false,
     discount_percent: raw.discount_percent,
+    offers: Array.isArray(raw.offers) ? raw.offers.filter((o: any) => o && typeof o === 'object' && 'title' in o) : [],
     created_at: raw.created_at ?? "",
     updated_at: raw.updated_at ?? "",
   };

@@ -354,28 +354,59 @@ export default function CafeDetailPage() {
                   </div>
                 )}
 
-{/* Special Offers Slider */}
-                {cafe.special_offers && cafe.special_offers.length > 0 && (
+{/* Special Offers — ticket-shaped cards matching the mobile app */}
+                {cafe.offers && cafe.offers.length > 0 && (
                   <div>
-                    <h3 className="text-white font-playfair text-2xl font-bold mb-4 tracking-wide">Special Offers</h3>
-                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-                      {cafe.special_offers.map((offer: { offer_id: string, title: string, description?: string, discount_percent?: number }) => (
-                        <div key={offer.offer_id} className="snap-start flex-none w-[300px] md:w-[340px] group relative overflow-hidden rounded-[20px] p-5 transition-all bg-gradient-to-r from-[#D80237] via-[#630F24] to-[#D80237] border border-[#C11E38]/50 shadow-lg">
-                          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-black/0 via-black/10 to-black/40 mix-blend-overlay" />
-                          <div className="relative z-10 flex gap-4 items-center">
-                            <div className="w-12 h-12 flex-shrink-0 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
-                              <Star size={24} className="text-white" fill="white" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <h4 className="text-white font-semibold text-base">{offer.title}</h4>
-                                {offer.discount_percent && (
-                                  <span className="bg-black/30 text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap border border-white/10">
-                                    {offer.discount_percent}% OFF
-                                  </span>
-                                )}
+                    <h3 className="text-white font-playfair text-2xl font-bold mb-5 tracking-wide">Special Offers</h3>
+                    <div className="flex overflow-x-auto gap-4 pb-3 snap-x hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                      {cafe.offers.map((offer: { title: string; description: string }, idx: number) => (
+                        <div key={idx} className="snap-start flex-none" style={{ width: 340, height: 84 }}>
+                          {/* SVG ticket shape — exact replica of the mobile app card */}
+                          <div className="relative" style={{ width: 340, height: 84 }}>
+                            <svg width={340} height={84} viewBox="0 0 340 84" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+                              <defs>
+                                <radialGradient id={`rd-${idx}`} cx="50%" cy="50%" r="65%">
+                                  <stop offset="0%" stopColor="#800020" />
+                                  <stop offset="34%" stopColor="#520417" />
+                                  <stop offset="100%" stopColor="#800020" />
+                                </radialGradient>
+                                <linearGradient id={`lm-${idx}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                  <stop offset="0%" stopColor="#D80237" />
+                                  <stop offset="62%" stopColor="#630F24" />
+                                  <stop offset="100%" stopColor="#D80237" />
+                                </linearGradient>
+                                <linearGradient id={`ls-${idx}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                  <stop offset="0%" stopColor="#D80237" />
+                                  <stop offset="68%" stopColor="#630F24" />
+                                  <stop offset="100%" stopColor="#D80237" />
+                                </linearGradient>
+                              </defs>
+                              {/* Base */}
+                              <path d="M16 0H54Q60 0 64 2Q70 6 72 6Q74 6 78 2Q82 0 88 0H324Q340 0 340 16V68Q340 84 324 84H88Q82 84 78 82Q74 78 72 78Q70 78 64 82Q60 84 54 84H16Q0 84 0 68V16Q0 0 16 0Z" fill={`url(#lm-${idx})`} />
+                              {/* Soft blend */}
+                              <path d="M16 0H54Q60 0 64 2Q70 6 72 6Q74 6 78 2Q82 0 88 0H324Q340 0 340 16V68Q340 84 324 84H88Q82 84 78 82Q74 78 72 78Q70 78 64 82Q60 84 54 84H16Q0 84 0 68V16Q0 0 16 0Z" fill={`url(#ls-${idx})`} opacity={0.84} />
+                              {/* Depth */}
+                              <path d="M16 0H54Q60 0 64 2Q70 6 72 6Q74 6 78 2Q82 0 88 0H324Q340 0 340 16V68Q340 84 324 84H88Q82 84 78 82Q74 78 72 78Q70 78 64 82Q60 84 54 84H16Q0 84 0 68V16Q0 0 16 0Z" fill={`url(#rd-${idx})`} opacity={0.84} />
+                              {/* Stroke */}
+                              <path d="M16 0H54Q60 0 64 2Q70 6 72 6Q74 6 78 2Q82 0 88 0H324Q340 0 340 16V68Q340 84 324 84H88Q82 84 78 82Q74 78 72 78Q70 78 64 82Q60 84 54 84H16Q0 84 0 68V16Q0 0 16 0Z" fill="none" stroke="#C11E38" strokeWidth={2} />
+                              {/* Dashed vertical divider */}
+                              <line x1="71" y1="18" x2="71" y2="66" stroke="rgba(255,255,255,0.35)" strokeWidth={2} strokeDasharray="6 6" />
+                            </svg>
+                            {/* Content overlay */}
+                            <div className="absolute inset-0 flex items-center px-4 gap-5">
+                              {/* Icon — ticket/tag SVG */}
+                              <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+                                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
+                                  <rect x="9" y="3" width="6" height="4" rx="1" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5"/>
+                                  <path d="M9 12h6M9 16h4" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round"/>
+                                </svg>
                               </div>
-                              {offer.description && <p className="text-white/70 text-[13px] leading-tight line-clamp-2">{offer.description}</p>}
+                              {/* Text */}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white font-semibold text-[15px] leading-tight truncate">{offer.title}</p>
+                                <p className="text-white/60 text-[12px] leading-snug mt-0.5 line-clamp-1">{offer.description}</p>
+                              </div>
                             </div>
                           </div>
                         </div>

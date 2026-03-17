@@ -73,15 +73,17 @@
     color: #FFFFFF;
   }
 
-  /* Headings use Playfair Display */
+  /* Headings use Cormorant Garamond — change font in layout.tsx to swap globally */
   h1, h2, h3 {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display), 'Cormorant Garamond', Georgia, serif;
+    letter-spacing: 0.01em;
   }
 }
 
 @layer utilities {
+  /* font-playfair kept as alias so existing className="font-playfair" still works */
   .font-playfair {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display), 'Cormorant Garamond', Georgia, serif;
   }
 
   .font-general-sans {

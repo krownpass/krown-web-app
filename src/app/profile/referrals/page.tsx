@@ -53,7 +53,9 @@ export default function ReferralsPage() {
 
         {/* Hero */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-[#800020] to-[#1A1A1A] rounded-2xl p-6 mb-6 text-center">
-          <div className="text-4xl mb-2">🎁</div>
+          <div className="mb-4 w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mx-auto">
+            <Gift size={28} className="text-white/80" strokeWidth={1.5} />
+          </div>
           <h2 className="font-playfair text-2xl font-bold text-white mb-1">Invite Friends</h2>
           <p className="text-white/60 text-sm">Earn 50 Krown Points for every friend you invite</p>
         </motion.div>
