@@ -19,12 +19,11 @@ export interface RedemptionOption {
 }
 
 export interface RedemptionRecord {
-  redemption_id: string;
-  user_id: string;
-  option_id?: string;
-  points_used: number;
-  status: 'pending' | 'completed' | 'cancelled';
-  voucher_code?: string;
-  redeemed_at: string;
-  option?: RedemptionOption;
+  item_name: string;
+  cafe_name: string;
+  image_url: string;
+  redeem_code: string;
+  redeem_code_exp_time: string | null;
+  is_redeemed: boolean;
+  updated_at: string;
 }

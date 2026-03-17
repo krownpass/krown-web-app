@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   User, Edit2, Bookmark, BookOpen, Receipt, Smartphone, Users, Crown,
   LogOut, ChevronRight, AlertTriangle, Star, Ticket, Activity, Home,
-  Calendar, Settings
+  Calendar, Settings, Wine
 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { Avatar } from '@/components/ui/Avatar';
@@ -22,6 +22,7 @@ const menuItems = [
   { href: '/events/my-tickets', icon: Ticket, label: 'My Tickets', description: 'View and manage your upcoming event passes' },
   { href: '/profile/bookmarks', icon: Bookmark, label: 'Favorites', description: 'Access your saved events and artists' },
   { href: '/bookings', icon: BookOpen, label: 'Booking History', description: 'Review your past table and event bookings' },
+  { href: '/profile/redeemed-drinks', icon: Wine, label: 'Redeemed Drinks', description: 'View your redeemed drinks and rewards' },
   { href: '/profile/transactions', icon: Receipt, label: 'Transactions', description: 'Download receipts and view payment history' },
   { href: '/profile/devices', icon: Smartphone, label: 'Active Sessions', description: 'Manage your logged-in devices and security' },
   { href: '/profile/referrals', icon: Users, label: 'Referrals', description: 'Invite friends and earn Krown points' },

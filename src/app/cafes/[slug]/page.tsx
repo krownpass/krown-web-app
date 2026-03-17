@@ -137,7 +137,7 @@ export default function CafeDetailPage() {
         {/* Top Floating Controls */}
         <div className="absolute top-4 md:top-8 left-4 right-4 flex justify-between z-20 max-w-4xl mx-auto md:px-6">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/cafes')}
             className="h-10 w-10 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-all hover:scale-105"
           >
             <ArrowLeft size={18} />
