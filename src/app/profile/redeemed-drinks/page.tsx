@@ -168,24 +168,26 @@ export default function RedeemedDrinksPage() {
                         @ {item.cafe_name}
                       </p>
                       
-                      {item.is_redeemed ? (
+                      {item.is_redeemed && (
                         <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium">
                           Redeemed
                         </div>
-                      ) : (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="inline-flex items-center px-4 py-1.5 rounded-lg bg-[#800020]/20 border border-[#800020]/30 w-fit">
-                            <Ticket size={14} className="text-[#ff4d79] mr-2" />
-                            <span className="text-white font-mono font-bold tracking-widest">{item.redeem_code}</span>
-                          </div>
-                          {item.redeem_code_exp_time && (
-                            <p className="text-white/40 text-[10px] uppercase tracking-wider">
-                              Valid until {new Date(item.redeem_code_exp_time).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
                       )}
                     </div>
+
+                    {!item.is_redeemed && (
+                      <div className="flex flex-col gap-2 items-end ml-4">
+                        <div className="inline-flex items-center px-5 py-2.5 rounded-xl bg-[#800020]/20 border border-[#800020]/30 w-fit shadow-lg shadow-[#800020]/10">
+                          <Ticket size={20} className="text-[#ff4d79] mr-3" />
+                          <span className="text-white font-mono text-xl font-bold tracking-[0.2em]">{item.redeem_code}</span>
+                        </div>
+                        {item.redeem_code_exp_time && (
+                          <p className="text-white/40 text-xs uppercase tracking-wider text-right">
+                            Valid until {new Date(item.redeem_code_exp_time).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
