@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Phone, ArrowRight, Loader2 } from 'lucide-react';
 import Image from 'next/image';
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const { login, isLoading } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const submittingRef = React.useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +26,11 @@ export default function LoginPage() {
     submittingRef.current = true;
     try {
       await login(phone);
-      router.push(`/verify-otp?phone=${phone}`);
+      const returnTo = searchParams.get('returnTo');
+      const targetUrl = returnTo 
+        ? `/verify-otp?phone=${phone}&returnTo=${encodeURIComponent(returnTo)}` 
+        : `/verify-otp?phone=${phone}`;
+      router.push(targetUrl);
     } catch {
       toast.error('Failed to send OTP. Please try again.');
     } finally {

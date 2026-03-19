@@ -36,7 +36,12 @@ export default function SignupPage() {
       const data = signupSchema.parse(form);
       await signup(data);
       toast.success('Welcome to Krown!');
-      router.push('/');
+      const returnTo = searchParams.get('returnTo');
+      if (returnTo) {
+        router.push(decodeURIComponent(returnTo));
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         const fieldErrors: FormErrors = {};
