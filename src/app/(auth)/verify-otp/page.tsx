@@ -62,11 +62,20 @@ export default function VerifyOtpPage() {
     try {
       await verifyOtp(phone, code);
       toast.success('Welcome to Krown!');
-      router.push('/');
+      const returnTo = searchParams.get('returnTo');
+      if (returnTo) {
+        router.push(decodeURIComponent(returnTo));
+      } else {
+        router.push('/');
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('not found') || msg.includes('register')) {
-        router.push(`/signup?phone=${phone}`);
+        const returnTo = searchParams.get('returnTo');
+        const targetUrl = returnTo 
+          ? `/signup?phone=${phone}&returnTo=${encodeURIComponent(returnTo)}` 
+          : `/signup?phone=${phone}`;
+        router.push(targetUrl);
       } else {
         toast.error('Invalid OTP. Please try again.');
         setOtp(['', '', '', '', '', '']);
@@ -75,7 +84,7 @@ export default function VerifyOtpPage() {
     } finally {
       verifyingRef.current = false;
     }
-  }, [verifyOtp, phone, router]);
+  }, [verifyOtp, phone, router, searchParams]);
 
   const handleResend = async () => {
     if (sendingRef.current) return;

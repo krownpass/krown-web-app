@@ -6,6 +6,12 @@ import { useAuthStore } from "@/stores/authStore";
 import { Copy, AlertCircle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { EventDetailsPresentation } from "@/components/event/EventDetailsPresentation";
+import { useEventRoom } from "@/hooks/useWebSocket";
+import { useQuery } from '@tanstack/react-query';
+import { useUserLocation } from '@/hooks/useUserLocation';
+import { getDistanceFromLatLon } from '@/lib/utils';
+import { eventService } from '@/services/event.service';
+import { AuthModal } from '@/components/modals/AuthModal';
 
 type InviteLinkMeta = {
     max_uses?: number;
@@ -27,6 +33,38 @@ export default function EventInviteClaimPage() {
     const [alreadyRegistered, setAlreadyRegistered] = useState(false);
     const [eventData, setEventData] = useState<any>(null);
     const [inviteLinkMeta, setInviteLinkMeta] = useState<InviteLinkMeta | null>(null);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'claim' | null>(null);
+
+    const roomData = useEventRoom(eventData?.event_id || '');
+
+    const event = React.useMemo(() => {
+        if (!eventData) return eventData;
+        const mergedEvent = { ...eventData, ...roomData.eventUpdates };
+        if (roomData.registrationCount !== undefined) {
+            mergedEvent.current_registrations = roomData.registrationCount;
+        }
+        return mergedEvent;
+    }, [eventData, roomData]);
+
+    const { latitude, longitude, hasPermission } = useUserLocation();
+
+    const { data: galleryImages = [] } = useQuery<string[]>({
+        queryKey: ['event-gallery', event?.event_id],
+        queryFn: async () => {
+            if (!event?.event_id) return [];
+            if (event.gallery_images?.length) return event.gallery_images;
+            return eventService.getEventGallery(event.event_id);
+        },
+        enabled: !!event?.event_id,
+    });
+
+    const eventLat = event?.venue_latitude ?? event?.latitude;
+    const eventLng = event?.venue_longitude ?? event?.longitude;
+    const venueDistance =
+        hasPermission && latitude && longitude && eventLat && eventLng
+            ? getDistanceFromLatLon(latitude, longitude, eventLat, eventLng)
+            : null;
 
     // Extract the numeric token
     const tokenMatch = inviteSegment?.match(/^invite-(.+)$/);
@@ -85,7 +123,8 @@ export default function EventInviteClaimPage() {
     const handleClaimSpot = async () => {
         if (!isAuthenticated) {
             sessionStorage.setItem("returnTo", `/events/${slug}/${inviteSegment}`);
-            router.push(`/login?returnTo=/events/${slug}/${inviteSegment}`);
+            setPendingAction('claim');
+            setShowAuthModal(true);
             return;
         }
 
@@ -144,8 +183,11 @@ export default function EventInviteClaimPage() {
     }
 
     return (
+        <>
         <EventDetailsPresentation
-            event={eventData}
+            event={event}
+            galleryImages={galleryImages}
+            venueDistance={venueDistance}
             onBack={() => router.push('/')}
             bottomBarSlot={
                 <div className="w-full max-w-4xl bg-black/60 backdrop-blur-3xl md:rounded-[32px] border-t md:border border-white/[0.08] pointer-events-auto p-4 md:p-5 shadow-[0_-20px_40px_rgba(0,0,0,0.5)] flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-500">
@@ -169,6 +211,8 @@ export default function EventInviteClaimPage() {
                     </div>
 
                     <div className="flex-1 flex justify-end w-full md:w-auto">
+
+
                         {alreadyRegistered ? (
                             <button 
                                 onClick={() => router.push('/events/my-tickets')}
@@ -176,7 +220,7 @@ export default function EventInviteClaimPage() {
                             >
                                 View My Tickets
                             </button>
-                        ) : (
+                        ) : inviteLinkMeta && inviteLinkMeta.spots_remaining && inviteLinkMeta.spots_remaining > 0 ? (
                             <button 
                                 onClick={handleClaimSpot}
                                 disabled={claiming}
@@ -188,10 +232,30 @@ export default function EventInviteClaimPage() {
                                     <>Claim My Spot <ArrowRight size={18} /></>
                                 )}
                             </button>
+                        ) :(
+                            <button 
+                                disabled={true}
+                                className="w-full md:w-auto md:max-w-[240px] flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-white/10 text-white/40 font-semibold text-[16px] tracking-wide cursor-not-allowed transition-all duration-300"
+                            >
+                                Spots Full
+                            </button>
                         )}
                     </div>
                 </div>
             }
         />
+        <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => {
+                setShowAuthModal(false);
+                setPendingAction(null);
+            }}
+            onSuccess={() => {
+                setShowAuthModal(false);
+                if (pendingAction === 'claim') handleClaimSpot();
+                setPendingAction(null);
+            }}
+        />
+        </>
     );
 }
