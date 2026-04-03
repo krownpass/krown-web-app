@@ -15,10 +15,12 @@ const retryConfig = {
 
 export function useRewardsInfo() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+
   return useQuery<RewardsInfo>({
     queryKey: queryKeys.user.rewards,
-    queryFn: () => rewardsService.getRewardsInfo(),
-    enabled: isAuthenticated,
+    queryFn: () => rewardsService.getRewardsInfo(user?.user_id),
+    enabled: isAuthenticated && !!user?.user_id,
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
     ...retryConfig,

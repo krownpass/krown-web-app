@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -13,14 +13,21 @@ export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRou
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isLoading && !isAuthenticated) {
       router.replace(redirectTo);
     }
-  }, [isAuthenticated, isLoading, router, redirectTo]);
+  }, [mounted, isAuthenticated, isLoading, router, redirectTo]);
 
-  if (!isAuthenticated) {
+  // Show loading spinner until client is fully mounted to avoid premature redirects
+  // from Next.js SSR mismatch with Zustand local storage.
+  if (!mounted || (mounted && !isAuthenticated && !isLoading)) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#800020] border-t-transparent rounded-full animate-spin" />

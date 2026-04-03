@@ -2,10 +2,27 @@ import api from "./api";
 import type { RewardsInfo, RedemptionOption, RedemptionRecord } from "@/types/rewards";
 
 export const rewardsService = {
-  // GET /api/users/me — points/tier info lives on the user object
-  async getRewardsInfo(): Promise<RewardsInfo> {
+  // Fetch both user profile for basis/tier and loyalty-history for actual points logic
+  async getRewardsInfo(userId?: string): Promise<RewardsInfo> {
     const res = await api.get("/users/me");
-    return res.data.data ?? res.data;
+    let rewardsData = res.data.data ?? res.data;
+
+    // Correcting logic by getting dynamic loyalty points from server
+    if (userId) {
+      try {
+        const balanceRes = await api.get(`/users/${userId}/loyalty-balance`);
+        const balanceData = balanceRes.data.data?.balance ?? balanceRes.data.balance;
+        if (balanceData !== undefined && balanceData !== null) {
+          rewardsData = { ...rewardsData, krown_points: Number(balanceData) };
+        } else {
+          rewardsData = { ...rewardsData, krown_points: 0 };
+        }
+      } catch (err) {
+        console.error("Failed to fetch loyalty balance:", err);
+      }
+    }
+
+    return rewardsData;
   },
 
   // GET /api/redeems/user/plans

@@ -53,7 +53,7 @@ export default function RedeemPage() {
 
         {rewards && (
           <p className="text-white/40 text-sm mb-6 ml-12">
-            Balance: <span className="text-[#D4AF37] font-semibold">{rewards.krown_points.toLocaleString()} pts</span>
+            Balance: <span className="text-[#D4AF37] font-semibold">{(rewards.krown_points ?? 0).toLocaleString()} pts</span>
           </p>
         )}
 
