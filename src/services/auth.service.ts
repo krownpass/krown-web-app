@@ -101,7 +101,12 @@ export const authService = {
   // POST /api/auth/logout
   async logout(): Promise<void> {
     // No body needed — server reads krown_rt HttpOnly cookie automatically
-    await api.post("/auth/logout", {}).catch(() => {});
+    try {
+      const res = await api.post("/auth/logout", {});
+    } catch(err) {
+      console.error("🚨 [WEB-LOGOUT] Logout error:", err);
+    }
+
     if (typeof window !== "undefined") {
       localStorage.removeItem("krown_token");
       localStorage.removeItem("krown_user");

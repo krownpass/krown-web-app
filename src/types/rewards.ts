@@ -26,4 +26,6 @@ export interface RedemptionRecord {
   redeem_code_exp_time: string | null;
   is_redeemed: boolean;
   updated_at: string;
+  points_used?: number;
+  voucher_code?: string;
 }

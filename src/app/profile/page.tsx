@@ -13,6 +13,7 @@ import { ProtectedRoute } from '@/components/shared/ProtectedRoute';
 import { Avatar } from '@/components/ui/Avatar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useProfile } from '@/queries/useUser';
+import { useRewardsInfo } from '@/queries/useRewards';
 import { useMyBookings } from '@/queries/useBookings';
 import { useMyTickets } from '@/queries/useEventDetail';
 import { useAuthStore } from '@/stores/authStore';
@@ -33,6 +34,7 @@ const menuItems = [
 export default function ProfilePage() {
     const router = useRouter();
     const { data: profile, isLoading } = useProfile();
+    const { data: rewardsInfo } = useRewardsInfo();
     const { data: bookings } = useMyBookings('cafe');
     const { data: tickets } = useMyTickets();
 
@@ -133,7 +135,7 @@ export default function ProfilePage() {
                                         {[
                                             { label: 'Bookings', value: bookings ? bookings.length.toString() : '—', icon: Calendar },
                                             { label: 'Events', value: tickets ? tickets.length.toString() : '—', icon: Ticket },
-                                            { label: 'Points', value: (profile.krown_points ?? 0).toLocaleString(), icon: Star },
+                                            { label: 'Points', value: (rewardsInfo?.krown_points ?? profile.krown_points ?? 0).toLocaleString(), icon: Star },
                                         ].map((stat, idx) => (
                                             <div key={stat.label} className="bg-white/[0.02] rounded-2xl p-4 text-center border border-white/[0.03] hover:border-[#800020]/30 transition-colors duration-300 group relative overflow-hidden">
                                                 <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

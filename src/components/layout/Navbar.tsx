@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, ChevronDown, LogOut, User, Bookmark, BookOpen } from 'lucide-react';
+import { Search, Bell, ChevronDown, LogOut, User, Bookmark, BookOpen, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useUnreadCount } from '@/queries/useNotifications';
@@ -142,6 +142,7 @@ export function Navbar() {
                       <div className="py-2">
                         {[
                           { icon: <User size={14} />, label: 'My Profile', href: '/profile' },
+                          { icon: <Crown size={14} />, label: 'Krown Rewards', href: '/rewards' },
                           { icon: <Ticket size={14} />, label: 'My Tickets', href: '/events/my-tickets' },
                           { icon: <Bookmark size={14} />, label: 'Bookmarks', href: '/profile/bookmarks' },
                           { icon: <BookOpen size={14} />, label: 'Bookings', href: '/bookings' },

@@ -30,12 +30,12 @@ export default function RedemptionHistoryPage() {
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
           </div>
         ) : history.length === 0 ? (
-          <EmptyState icon="Gift" title="No redemptions yet" subtitle="Redeem your points for exciting rewards" actionLabel="Redeem Now" onAction={() => router.push('/rewards/redeem')} />
+          <EmptyState icon="Gift" title="No redemptions yet" subtitle="Redeem your points for exciting rewards" actionLabel="Redeem Now" onAction={() => router.push('/rewards')} />
         ) : (
           <div className="space-y-3">
             {history.map((record, i) => (
               <motion.div
-                key={record.redemption_id}
+                key={record.redeem_code}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
@@ -45,16 +45,16 @@ export default function RedemptionHistoryPage() {
                   <Gift size={18} className="text-[#800020]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm truncate">{record.option?.title ?? 'Redemption'}</p>
-                  <p className="text-white/40 text-xs">{formatDate(record.redeemed_at)}</p>
+                  <p className="text-white font-medium text-sm truncate">{record.item_name ?? 'Redemption'}</p>
+                  <p className="text-white/40 text-xs">{formatDate(record.updated_at)}</p>
                   {record.voucher_code && (
                     <p className="text-green-400 text-xs font-mono mt-0.5">{record.voucher_code}</p>
                   )}
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-red-400 text-sm font-semibold">-{record.points_used} pts</p>
-                  <Badge variant={record.status === 'completed' ? 'success' : record.status === 'pending' ? 'warning' : 'error'} className="mt-1">
-                    {record.status}
+                  <p className="text-red-400 text-sm font-semibold">-{record.points_used ?? 0} pts</p>
+                  <Badge variant={record.is_redeemed ? 'success' : 'warning'} className="mt-1">
+                    {record.is_redeemed ? "completed" : "pending"}
                   </Badge>
                 </div>
               </motion.div>
